@@ -2,16 +2,22 @@
   "name": "encova-hub",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --conditions=react-server --test learning/day-02.test.mts tests/clients.test.mts",
+    "test:http": "node --test tests/clients.http.test.mts",
+    "practice:day2": "node learning/day-02.mts"
   },
   "dependencies": {
     "next": "16.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

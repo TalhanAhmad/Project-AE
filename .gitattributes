@@ -1,0 +1,2 @@
+# Keep pnpm patch bytes stable on Windows and across fresh checkouts.
+*.patch text eol=lf

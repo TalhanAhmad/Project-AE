@@ -1,0 +1,20 @@
+diff --git a/dist/server/lib/start-server.js b/dist/server/lib/start-server.js
+index bb1e5461d0de72ee824c6e3c3f6997504f468715..887b5dd740c88c5c03c89643c595bb07a472ffa5 100644
+--- a/dist/server/lib/start-server.js
++++ b/dist/server/lib/start-server.js
+@@ -202,6 +202,15 @@ async function startServer(serverOptions) {
+         throw new Error('Using a self signed certificate is only supported with `next dev`.');
+     }
+     async function requestListener(req, res) {
++        // Project patch: reject TRACE before the Web Request adapter throws.
++        if (req.method === 'TRACE') {
++            res.statusCode = 405;
++            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
++            res.setHeader('Cache-Control', 'no-store');
++            res.setHeader('X-Content-Type-Options', 'nosniff');
++            res.end('Method Not Allowed');
++            return;
++        }
+         try {
+             if (handlersPromise) {
+                 await handlersPromise;

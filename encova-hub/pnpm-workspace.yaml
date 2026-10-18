@@ -1,0 +1,5 @@
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+patchedDependencies:
+  next@16.4.2: patches/next@16.4.2.patch
