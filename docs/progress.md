@@ -59,8 +59,9 @@ Workspace was initially empty. Both DOCX files and architecture Markdown were re
 ## GitHub publication
 
 - Repository: https://github.com/TalhanAhmad/Project-AE.git
-- Target branch: main.
-- Status: Preparing the initial project push; remote was checked and had no refs.
+- Branch: main, tracking origin/main.
+- Status: Project code published and verified on GitHub. Initial project publication commit: 6a88a1f988ecc2e4df84a044a27a1b7960a37459. This is the verified code snapshot, not a claim that future documentation updates keep the same HEAD.
+- Publication verification: local HEAD, origin/main, and GitHub refs/heads/main matched after pushing. A fresh GitHub clone contained the code, tests, docs, supplied Word documents, lockfile, and framework patch; patch SHA-256 matched the original bytes. No deployment performed.
 - Pre-push checks: current text files, initial Git history, and Word-document XML had no matches for the tested credential patterns. No environment files, dependencies, build output, or Git metadata are tracked. Patch LF attributes and Git whitespace checks passed. Existing tests/build results above are unchanged; they were not rerun solely for publication.
 
 ## Day statuses

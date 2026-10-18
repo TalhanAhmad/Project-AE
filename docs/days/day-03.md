@@ -100,3 +100,13 @@ User requested finding and fixing code/security gaps. Day 4 remains Pending; onl
 - Final README links and staged/working whitespace checks passed; original Git HEAD unchanged. Dev GET rechecked: HTTP 200. Patch line endings protected through .gitattributes for reproducible Windows installs.
 
 No independent learner understanding newly demonstrated; waived questions remain waived. No Day 4 implementation begun. See security-review.md for patch details and remaining dependency risk.
+
+## Authorized GitHub publication - 2026-10-18
+
+User provided https://github.com/TalhanAhmad/Project-AE.git and explicitly requested committing all code and pushing. Preserved README and the existing scaffold commit, renamed master to main, added origin, committed all project source/tests/docs/lockfile/patch, and pushed main with upstream tracking. No force push or deployment.
+
+Code publication commit: 6a88a1f988ecc2e4df84a044a27a1b7960a37459. Verified local HEAD, origin/main, and the remote main ref matched. Fresh GitHub clone contained the expected code, tests, docs, supplied DOCX references, package/lockfile, and patch; patch bytes matched by SHA-256.
+
+Pre-push review scanned 44 current text files, 17 text files in the initial Git history, and XML inside both Word references: no matches for the tested credential patterns. No tracked environment files, dependencies, generated builds, or Git metadata. These are pattern-based checks, not proof of absence of every possible secret. Git whitespace checks passed. No application change occurred and existing passing checks were not rerun merely to publish.
+
+Updated root README with the repository link and clone working-directory guidance; updated this record and docs/progress.md with verified publication. This record describes the first published code snapshot; follow-up documentation commits can advance main. Day 4 remains Pending and needs explicit approval. Current next task remains Day 4 POST/Zod work after approval.
