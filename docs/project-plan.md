@@ -33,3 +33,5 @@ Week-one acceptance: local client listing/creation, useful server validation, fo
 ## User instruction update - 2026-10-18
 
 The user explicitly said "skip questions start woking in day 2". This supersedes the earlier requirement to answer learning questions before advancement and permits Day 2 on the same date. Do not repeat skipped questions; record learning checks as waived, never verified. Technical requirements and the restriction against automatically starting later days still apply. Independent explanation remains an original learning goal with no evidence of completion.
+
+The user later explicitly approved Days 3 and 4, then confirmed "Yes—finish Week 1" for the remaining Days 5-7 and a double code review/report. That is an exception to same-date pacing and permits completing the remaining technical scope in order. Independent endpoint authorship and understanding remain unverified; assistant implementation cannot satisfy the original independent exercise. Week 2 implementation, another GitHub push and deployment remain outside this approval.

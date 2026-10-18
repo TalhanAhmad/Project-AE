@@ -65,3 +65,33 @@ Add two meaningful failure-path unit tests and a separate live HTTP suite. The n
 TRACE reproduced an upstream failure before application route dispatch. A project-maintained nine-line pnpm patch rejects it in Next.js 16.4.2's standard CLI listener before Web Request creation, with plain 405 and no reflected headers/debug details. This preserves the normal Next CLI, folder structure, and app architecture. pnpm-workspace.yaml and lockfile pin/apply the patch. Actual cold dev and production HTTP tests verify it. It is not an upstream security release; review on upgrades or different server/hosting entry points. Keep the unrelated unpatched braces development advisory open and unsuppressed.
 
 Keep *.patch files at LF using root .gitattributes. This prevents Windows Git checkout line-ending conversion from changing the bytes used by pnpm's locked patch hash. Verify the raw patch blob matches its Git index blob.
+
+## 2026-10-18 - Day 4 validation and creation
+
+User explicitly approved Day 4 now; prior question waiver remains in effect. No Day 5 work authorized. New changes remain local; the prior one-time GitHub publication did not request automatically pushing every future feature.
+
+Pin Zod 4.6.7 and use strictObject so browser IDs, timestamps, roles, and other unknown fields are rejected. Validate at the service boundary before any insert. Generate UUIDs and UTC ISO timestamps on the server and reuse explicit DTO mapping for list/create.
+
+Beyond required name<=120, choose bounded optional strings: company<=120, notes<=5000, email<=254, all trimmed. Supplied email must be valid and nonempty; omitted email is allowed. Optional company/notes may be empty. These practical limits are explicit choices for local request safety, not extra feature modules. Zod 4.6 measures Unicode code points; tests verify 120-emoji names and maximum-size Unicode fields.
+
+Use server/http.ts for an actual-byte-limited 32 KiB JSON reader and local mutation checks. Accept only JSON; compare supplied Origin to the actual validated local Host and port, reject cross-site Fetch metadata, and allow origin-free API tools. Next normalizes loopback URL hostnames internally, so URL-origin comparison alone incorrectly rejected 127.0.0.1 browser requests; real HTTP tests caught this and the fix preserves exact origin restrictions. These controls do not provide authentication or authorize deployment.
+
+Keep all JSON outcomes uncached. Use 201/400/422 for milestone behavior, 403 for origin/host denial, 413 for excessive bodies, 415 for unsupported media, and safe 500 with request ID for unexpected errors. Field errors contain only known fields or _form; do not echo unrecognized key names or raw input. Preserve existing sanitized logging.
+
+HTTP checks now deliberately create synthetic clients and can be rerun against nonempty memory. Replace the Day 3 POST-405 expectation with actual creation/validation checks; keep unsupported PUT/PATCH/DELETE and the framework TRACE patch checks. Do not add a public test seed/reset endpoint or a database to simplify tests.
+
+## 2026-10-18 - Complete authorized Week 1 technical scope
+
+User confirmed "Yes—finish Week 1" after the assistant clarified Days 5-7 with learning questions skipped. Complete those days in order on this date; do not repeatedly request approval already granted. Keep independent rebuild/explanation unverified rather than treating AI-written code as learner evidence. This approval does not authorize Week 2, another push or deployment.
+
+Keep /clients as a server page containing one interactive client workspace. Browser fetches the existing GET/POST API; the server page does not make HTTP calls back to itself. Store/service remain server-only. Share Zod input rules and allowlisted field-error formatting; validate response JSON at runtime before rendering. Keep the current Client type and project structure.
+
+Omit blank optional browser fields, especially email. Avoid HTML maxLength because its UTF-16 counting would reject valid 120-emoji names accepted by installed Zod's Unicode code-point rule. Shared validation and actual browser/server boundary tests enforce the limits instead.
+
+Use abort controllers to disregard stale GETs and cancel requests on unmount. Disable pending controls and guard submissions synchronously. Never automatically replay a POST: a lost response can leave a successful write uncertain. Preserve input on failure, and advise refreshing first. A confirmed creation is merged immediately and stays visible if its following refresh fails. React renders all input as text; no HTML injection API is used.
+
+Pin Playwright 1.64.1 as a development dependency and run installed Chrome headless. Use real API calls for successful creation/reload, controlled HTTP responses for UI errors, and one worker. Run HTTP and browser suites sequentially per server because both write fake fixtures. Test artifacts stay ignored. Remove starter Google fonts and use system fonts so production builds do not fetch font files.
+
+Production browser testing reproduced stale starter CSS despite a successful build. Fetched CSS lacked current selectors and computed layout overflowed. Following installed Next 16.4.2 documentation, disable persistent Turbopack caches for both build/dev. Rebuild then verify served CSS and browser behavior. This is a reproducible local workaround with slower fresh compilation, not a claim that the upstream cache bug is fixed; revisit only after a tested upgrade.
+
+Verify current local work in a fresh temporary copy, including untracked intended source files, with a frozen install/build. Do not call it a fresh GitHub clone: remote main is still the earlier Day 3 publication. Keep the client/project relationship sketch as documentation only.

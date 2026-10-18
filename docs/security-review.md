@@ -6,6 +6,8 @@ This is the Day 2 review snapshot. Day 3 was subsequently approved and implement
 
 The latest follow-up at the end of this file records the subsequent safe-error fix, Next.js TRACE patch, 28 unit tests, and 16 live HTTP tests. Earlier counts below are historical evidence, not the current suite size.
 
+Day 4 has since added POST and request validation. Its newest results are in the final Day 4 section below: 64 unit checks, 19 HTTP checks, and production audit across 95 dependencies. Earlier GET-only behavior/counts remain historical snapshots.
+
 ## Findings and fixes
 
 1. The name exercise accepted inherited names and arrays with a name property. Reproduced both before changing code. It now rejects arrays and reads only an own data property. Getters are rejected without execution. This is still a practice function, not the future request-validation schema.
@@ -127,3 +129,46 @@ Remove-Item Env:\TEST_BASE_URL
 ```
 
 The temporary production process used for this review was stopped; patched dev server remains on 127.0.0.1:3000. No Git commit, push, or deployment was performed. The full audit is still not clean because the braces development dependency has no published patch. Authentication, real request validation, and database safety remain unimplemented milestone work; this review is not proof of universal security.
+
+## Day 4 creation/validation checks - 2026-10-18
+
+User explicitly approved Day 4. Added strict Zod 4.6.7 input validation before inserts, server-generated UUID/UTC timestamps, and explicit client responses. The schema accepts only name/email/company/notes. Browser-supplied IDs, roles, timestamps, prototype keys, nulls, and wrong types are rejected. Tests verify invalid input never reaches insert or changes the list.
+
+POST requires JSON, validates the actual local loopback Host/port and any supplied Origin, rejects cross-site Fetch metadata, and limits actual streamed bytes to 32 KiB even without or with a falsely small Content-Length. Streams exceeding the limit are cancelled, malformed UTF-8 is rejected, and valid multibyte characters split across chunks are decoded correctly. A maximum-length Unicode input fits within the body limit. Optional string bounds are documented in README and day-04.md.
+
+Initial real HTTP tests revealed that comparing Origin directly to Next's normalized request URL incorrectly denied requests to 127.0.0.1. Inspected installed NextURL source, reproduced the mismatch, and fixed it using an exact Host allowlist plus port check. Regression tests cover that normalization, forged hosts, malformed authorities, and different local ports. Browser Origin checking is a local mutation safeguard; origin-free API clients can still create fake records. It is not identity verification or production authorization.
+
+Responses: 201 created, 400 malformed JSON, 422 invalid fields, 403 forbidden origin/host, 413 excessive body, 415 unsupported media, and generic 500 with request ID for unexpected failures. All JSON responses are no-store. Validation errors expose only allowlisted fields/_form and useful messages; unknown input keys, raw values, and stack traces are not reflected or logged. Existing headers and the pinned framework TRACE patch remain active.
+
+Final actual results:
+
+- 64 unit checks passed in two final rounds (128 executions).
+- 19 live HTTP checks passed twice in development and twice in production (76 test executions). These include valid POST->GET, malformed/invalid-input non-mutation, origin/media/size rejection, read methods, private paths, TRACE rejection, concurrent reads, and concurrent creations.
+- Typecheck, lint, production build, and frozen install passed. Framework patch remained installed.
+- Production audit: exit 0, no known advisories across 95 entries.
+- Full audit: exit 1, same one high development-only braces advisory. No suppression or claimed fix for it.
+- Temporary production process stopped; dev server retained with only synthetic fixture records from live HTTP tests.
+
+Initial test failures are recorded in day-04.md: two implicit-any test parameters and four live HTTP failures due to the loopback-origin mismatch. Both were corrected before the final passing rounds. No later-day UI, authentication, database, deployment, or automatic GitHub push was added. Current changes remain local. This is evidence of the tested behavior, not a claim that all possible vulnerabilities are absent.
+
+Validation follows the installed version and [official schema API](https://zod.dev/api) and [error-formatting guidance](https://zod.dev/error-formatting). Actual Unicode boundary behavior was also verified locally.
+
+## Final Week 1 review - 2026-10-18
+
+This section supersedes earlier snapshots that said the UI or request validation was future work. User explicitly approved completing Days 5-7. Full findings and limitations are in [Week 1 report](week-1-report.md).
+
+The browser now uses shared strict input rules and checks API response JSON. Blank optional email is omitted; Unicode limits match the installed schema. Invalid fields keep input and receive accessible messages. A field-focus bug was reproduced and fixed by focusing after pending controls re-enable. Pending submission guards prevent duplicate clicks. No failed/uncertain POST is automatically replayed, and confirmed saved rows remain visible if the following GET fails. HTML-like names and notes render as text; a browser regression verified no injected elements or executed payload. Long details fit a 375px mobile viewport.
+
+A production browser run initially passed 13/14 while HTTP/build checks were green. The failed mobile layout exposed old starter CSS in the production output. Fetched CSS and computed styles confirmed it. Installed Next cache documentation supports disabling persistent Turbopack caches; fresh compilation then served current CSS and all 14 browser checks passed. This is a local workaround; revisit it and the pinned TRACE patch with a tested framework upgrade.
+
+Final evidence:
+
+- 64 unit tests passed in each of two Day 6 rounds (128 executions); Day 5 also ran 64 successfully.
+- Final development and production each passed 19 real HTTP checks and 14 headless Chrome browser checks. Browser retries were zero. A final dev repeat after configuration changes also passed.
+- Typecheck, lint and production build passed after the final code/configuration changes.
+- Clean local-source copy (55 paths, no prior dependencies/build cache or Git metadata): frozen install and build passed; actual browser create/list/reload/API checks, current mobile styles and installed TRACE rejection passed. Patch bytes matched SHA-256. This is current local work, not the earlier GitHub publication.
+- Production audit exit 0: zero known advisories across 98 entries. Full audit exit 1: same high development-only braces 3.0.3 advisory, GHSA-vfj7-8cjw-p6xm, with no patched version reported. It remains open and unsuppressed. Playwright added no further reported advisories.
+- Targeted credential-pattern scan at review time: 46 text files, no tested-pattern matches or forbidden tracked environment/dependency/build/test/key artifacts. Earlier document/history scan evidence remains above; no claim of universal secret detection.
+- Git working/index whitespace checks passed. Temporary production servers stopped; development remains on loopback port 3000. No new commit, push or deployment.
+
+Remaining limits: process-local disposable memory can reset and has no global capacity cap, paging or durable recovery; no authentication or multi-user permissions; version-specific custom framework patch and disabled persistent caches; Chrome tested here, optional Chromium configuration not executed. These checks support the tested local learning flow and do not establish public-production readiness or absence of all possible vulnerabilities. Week 2 features remain unimplemented. Independent endpoint rebuilding and learner understanding remain unverified.

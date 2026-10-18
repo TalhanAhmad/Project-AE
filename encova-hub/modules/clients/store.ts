@@ -3,6 +3,7 @@ import type { Client } from "./types.ts";
 
 export type ClientStore = {
   list(): Client[];
+  insert(client: Client): Client;
 };
 
 // Local practice only: every server process has its own disposable memory.
@@ -15,6 +16,11 @@ export function createClientStore(initialClients: readonly Client[] = []): Clien
     list() {
       // Callers receive copies so reading cannot accidentally change storage.
       return clients.map((client) => ({ ...client }));
+    },
+    insert(client) {
+      const stored = { ...client };
+      clients.push(stored);
+      return { ...stored };
     },
   };
 }

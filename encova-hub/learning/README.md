@@ -34,3 +34,5 @@ The name exercise rejects arrays, inherited names, and getter properties. Import
 The user asked to skip learning questions. These examples are assistant-written; independent understanding has not been verified.
 
 Day 3 and its follow-up review add ten store/service/GET checks in `tests/clients.test.mts`, making 28 total unit checks. A separate `pnpm test:http` command runs 16 checks against a running local server. The unit test command uses Node's `react-server` condition to load server-only modules. Read [the Day 3 record](../../docs/days/day-03.md) for actual results and [the project README](../../README.md) for the live read endpoint.
+
+Day 4 subsequently adds strict Zod validation and POST creation. Current suite: 64 unit checks and 19 live HTTP checks. HTTP checks now create synthetic records; the older Day 3 counts describe that historical snapshot. Read [Day 4](../../docs/days/day-04.md) for creation behavior, actual checks, and why a TypeScript type alone cannot validate incoming JSON.

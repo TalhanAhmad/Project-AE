@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     agentFeedback: false,
+    // This local project reproduced stale CSS after a warm-cache build.
+    // Prefer fresh compilations until the framework cache can be revalidated.
+    turbopackFileSystemCacheForBuild: false,
+    turbopackFileSystemCacheForDev: false,
   },
   cacheComponents: false,
   partialPrefetching: false,

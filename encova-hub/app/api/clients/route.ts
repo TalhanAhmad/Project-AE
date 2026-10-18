@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { listClients } from "../../../modules/clients/service.ts";
+import { ZodError } from "zod";
+import { clientValidationErrors } from "../../../modules/clients/schemas.ts";
+import { createClient, listClients } from "../../../modules/clients/service.ts";
+import { readLocalJsonRequest, RequestError } from "../../../server/http.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +32,45 @@ export async function GET(): Promise<Response> {
         status: 500,
         headers: { "Cache-Control": "no-store", "X-Request-Id": requestId },
       },
+    );
+  }
+}
+
+export async function POST(request: Request): Promise<Response> {
+  try {
+    const input = await readLocalJsonRequest(request);
+    const client = await createClient(input);
+    return Response.json(
+      { data: client },
+      { status: 201, headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    if (error instanceof RequestError) {
+      return Response.json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.status, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    if (error instanceof ZodError) {
+      const fields = clientValidationErrors(error);
+      return Response.json(
+        { error: { code: "VALIDATION_ERROR", message: "Check the client fields.", fields } },
+        { status: 422, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const requestId = randomUUID();
+    console.error("clients.create.failed", { code: "INTERNAL_ERROR", requestId });
+    return Response.json(
+      {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Unable to create the client. Please try again.",
+          requestId,
+        },
+      },
+      { status: 500, headers: { "Cache-Control": "no-store", "X-Request-Id": requestId } },
     );
   }
 }

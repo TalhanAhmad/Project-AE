@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { request } from "node:http";
 import { test } from "node:test";
 
@@ -14,6 +15,21 @@ if (
 const endpoint = new URL("/api/clients", baseUrl);
 const timeout = () => AbortSignal.timeout(10_000);
 
+async function readClients() {
+  const response = await fetch(endpoint, { signal: timeout() });
+  assert.equal(response.status, 200);
+  return (await response.json()).data;
+}
+
+function post(body: string, headers: Record<string, string> = {}) {
+  return fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: baseUrl.origin, ...headers },
+    body,
+    signal: timeout(),
+  });
+}
+
 test("GET returns uncached JSON with browser-security headers", async () => {
   const response = await fetch(endpoint, { signal: timeout() });
   assert.equal(response.status, 200);
@@ -24,7 +40,9 @@ test("GET returns uncached JSON with browser-security headers", async () => {
   assert.equal(response.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin");
   assert.equal(response.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=()");
   assert.equal(response.headers.get("X-Powered-By"), null);
-  assert.deepEqual(await response.json(), { data: [] });
+  const body = await response.json();
+  assert.deepEqual(Object.keys(body), ["data"]);
+  assert.ok(Array.isArray(body.data));
 });
 
 test("HEAD returns success and headers without a body", async () => {
@@ -34,16 +52,15 @@ test("HEAD returns success and headers without a body", async () => {
   assert.equal(await response.text(), "");
 });
 
-test("OPTIONS advertises only the supported read methods", async () => {
+test("OPTIONS advertises the supported read and create methods", async () => {
   const response = await fetch(endpoint, { method: "OPTIONS", signal: timeout() });
   assert.equal(response.status, 204);
   const methods = (response.headers.get("Allow") ?? "").split(/,\s*/).sort();
-  assert.deepEqual(methods, ["GET", "HEAD", "OPTIONS"]);
+  assert.deepEqual(methods, ["GET", "HEAD", "OPTIONS", "POST"]);
 });
 
-// These expectations describe Day 3 only; update them when Day 4 adds POST.
-for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-  test(`${method} is unavailable before client creation is implemented`, async () => {
+for (const method of ["PUT", "PATCH", "DELETE"]) {
+  test(`${method} remains unsupported`, async () => {
     const response = await fetch(endpoint, { method, signal: timeout() });
     assert.equal(response.status, 405);
     await response.arrayBuffer();
@@ -109,12 +126,89 @@ for (const path of [
   });
 }
 
-test("twenty concurrent reads leave the fresh store empty", async () => {
+test("twenty concurrent reads do not change current data", async () => {
+  const before = await readClients();
   await Promise.all(
     Array.from({ length: 20 }, async () => {
       const response = await fetch(endpoint, { signal: timeout() });
       assert.equal(response.status, 200);
-      assert.deepEqual(await response.json(), { data: [] });
+      assert.deepEqual(await response.json(), { data: before });
     }),
   );
+});
+
+test("malformed JSON and invalid fields never create clients", async () => {
+  const before = await readClients();
+  const cases: [string, number][] = [
+    ["{", 400],
+    ["", 400],
+    ['{"name":" "}', 422],
+    [JSON.stringify({ name: "a".repeat(121) }), 422],
+    ['{"name":"Example","email":"invalid"}', 422],
+    ['{"name":"Example","id":"browser-id"}', 422],
+    ['{"name":"Example","role":"OWNER"}', 422],
+    ['{"name":"Example","__proto__":{"admin":true}}', 422],
+    ["null", 422],
+    ["[]", 422],
+  ];
+  for (const [input, status] of cases) {
+    const response = await post(input);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.ok((await response.json()).error.code);
+  }
+  assert.deepEqual(await readClients(), before);
+});
+
+test("wrong origins, content types, and oversized bodies cannot mutate storage", async () => {
+  const before = await readClients();
+  const attempts: [string, Record<string, string>, number][] = [
+    ['{"name":"Example"}', { Origin: "https://unrelated.example.test" }, 403],
+    ['{"name":"Example"}', { Origin: "null" }, 403],
+    ['{"name":"Example"}', { "Sec-Fetch-Site": "cross-site" }, 403],
+    ['{"name":"Example"}', { "Content-Type": "text/plain" }, 415],
+    [JSON.stringify({ name: "Example", notes: "x".repeat(33 * 1024) }), {}, 413],
+  ];
+  for (const [body, headers, status] of attempts) {
+    const response = await post(body, headers);
+    assert.equal(response.status, status);
+    assert.ok((await response.json()).error.code);
+  }
+  assert.deepEqual(await readClients(), before);
+});
+
+test("POST returns 201 and the created fake client appears in GET", async () => {
+  const name = `HTTP Fixture ${randomUUID()}`;
+  const response = await post(JSON.stringify({
+    name: `  ${name}  `,
+    email: " client@example.test ",
+    company: " Fake Agency ",
+    notes: " Fake HTTP test data ",
+  }));
+  assert.equal(response.status, 201);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  const { data } = await response.json();
+  assert.equal(data.name, name);
+  assert.equal(data.email, "client@example.test");
+  assert.equal(data.company, "Fake Agency");
+  assert.equal(data.notes, "Fake HTTP test data");
+  assert.match(data.id, /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/);
+  assert.equal(new Date(data.createdAt).toISOString(), data.createdAt);
+  assert.equal(data.updatedAt, data.createdAt);
+  const clients = await readClients();
+  assert.deepEqual(clients.find((client: { id: string }) => client.id === data.id), data);
+});
+
+test("concurrent POST requests create distinct fake clients without lost writes", async () => {
+  const names = Array.from({ length: 4 }, () => `Parallel Fixture ${randomUUID()}`);
+  const results = await Promise.all(names.map(async (name) => {
+    const response = await post(JSON.stringify({ name }));
+    assert.equal(response.status, 201);
+    return (await response.json()).data;
+  }));
+  assert.equal(new Set(results.map((client) => client.id)).size, 4);
+  const clients = await readClients();
+  for (const result of results) {
+    assert.deepEqual(clients.find((client: { id: string }) => client.id === result.id), result);
+  }
 });
