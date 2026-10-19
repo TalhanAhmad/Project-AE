@@ -7,12 +7,12 @@
 - Completed sessions: 5.
 - Remaining sessions: 0 technical sessions.
 - Last session date (Asia/Karachi): 2026-10-19.
-- Blockers: Vercel project `talha-ahmad/encova-hub` is linked and its root directory is corrected to `encova-hub`, but Neon Marketplace terms must be accepted before its managed production PostgreSQL database can be created.
+- Blockers: Neon Marketplace terms must be accepted before the linked Vercel project can create its managed production PostgreSQL database. Without `DATABASE_URL`, the deployed API cannot read or create clients/projects.
 - Known issue: one high unpatched development-only braces advisory; production audit has no known advisories. Independent learning is unverified.
-- Exact next task: Accept the Neon Marketplace terms, provision the production database, run the saved migration with Vercel production credentials, set the exact `APP_ORIGIN`, deploy, and test the live API.
+- Exact next task: Accept the Neon Marketplace terms, provision the production database, run the saved migration with Vercel production credentials, redeploy, and test the live API.
 - Advancement approval: User explicitly authorized completing Week 2 now, with repeated testing and report, after publishing Week 1. Same-date session advancement is authorized. Learning questions remain skipped; independent understanding is not verified.
 - Week 3 advancement: Not approved.
-- Deployment: In progress. The first Git deployment failed because Vercel used the repository root and could not find Next.js; the project root is now corrected. No live deployment exists yet because the production database has not been provisioned.
+- Deployment: In progress. The first Git deployment failed because Vercel used the repository root and could not find Next.js; the project root is now corrected. The production alias is public and `APP_ORIGIN` is configured as `https://encova-hub.vercel.app`, but no database is provisioned yet, so API reads/writes fail.
 
 ## Verified publication
 
