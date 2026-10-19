@@ -119,3 +119,11 @@ Keep existing Node tests rather than rewrite passing Week 1 coverage into anothe
 Use an explicit fixed-ID synthetic seed and parameterized join for learning. Recreation creates a unique scratch database, migrates/seeds twice/checks exact relationships, then drops only that same verified new database. It does not reset development/test DBs or substitute for later backup/restore work. Verify application persistence through an actual process stop/start plus independent SQL timestamp comparison. Clean-source install/build checks exclude .env, database data/binaries, generated/dependency/build output and Git metadata.
 
 Keep SQL migrations BOM-free and LF through .gitattributes; PowerShell's initial BOM caused a migration failure before application tables existed. Marked only that failed migration rolled back after inspecting the effect, then reapplied; no reset. Never generalize that recovery to an unrelated failure or edit successfully applied migration bytes.
+
+## 2026-10-19 - Vercel deployment preparation
+
+The user authorized a Vercel deployment. Link the project as `talha-ahmad/encova-hub`, keep its generated `.vercel` directory and `.env.local` ignored, and never publish the OIDC token that Vercel creates locally. The project has no remote environment variables or custom domain yet.
+
+The existing mutation guard was intentionally local-only. Preserve strict loopback host handling locally; for a deployed request, require an exact HTTPS `APP_ORIGIN`, require the request URL and Host to match it, and require a matching browser Origin when one is supplied. Do not trust a host header alone, auto-allow Vercel preview URLs, or put credentials into this public setting. Unit coverage exercises allowed Vercel-style requests and denied wrong host, HTTP, and missing configuration cases.
+
+Use a managed PostgreSQL provider through Vercel Marketplace rather than exposing the Windows loopback database. Neon is selected because it has Vercel-native configuration, but its Marketplace terms must be accepted in the user's browser before resource provisioning. After that, use production-scoped environment variables, run the committed migration with `vercel env run`, then deploy and test before reporting a public URL.

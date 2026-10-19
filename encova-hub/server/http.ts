@@ -13,36 +13,75 @@ export class RequestError extends Error {
   }
 }
 
-export async function readLocalJsonRequest(request: Request): Promise<unknown> {
+function forbiddenOrigin(): never {
+  throw new RequestError(403, "FORBIDDEN_ORIGIN", "Use this application's origin.");
+}
+
+function configuredApplicationOrigin(): string | null {
+  const value = process.env.APP_ORIGIN?.trim();
+  if (!value) return null;
+
+  try {
+    const origin = new URL(value);
+    if (
+      origin.protocol !== "https:" ||
+      origin.username ||
+      origin.password ||
+      origin.pathname !== "/" ||
+      origin.search ||
+      origin.hash
+    ) {
+      return null;
+    }
+    return origin.origin;
+  } catch {
+    return null;
+  }
+}
+
+function expectedApplicationOrigin(url: URL, host: string | null): string {
+  const isLocal = ["127.0.0.1", "localhost"].includes(url.hostname);
+  if (isLocal) {
+    let expectedOrigin = url.origin;
+    // Next normalizes loopback URL hostnames to localhost. Browser Origin keeps
+    // the actual address, so use Host only after an exact local-host allowlist.
+    if (host !== null) {
+      if (!/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/i.test(host)) forbiddenOrigin();
+      try {
+        const hostUrl = new URL(`${url.protocol}//${host}`);
+        if (hostUrl.port !== url.port) throw new Error("Different local port");
+        expectedOrigin = hostUrl.origin;
+      } catch {
+        forbiddenOrigin();
+      }
+    }
+    return expectedOrigin;
+  }
+
+  const expectedOrigin = configuredApplicationOrigin();
+  if (!expectedOrigin || url.origin !== expectedOrigin || host === null) forbiddenOrigin();
+  try {
+    if (new URL(`${url.protocol}//${host}`).origin !== expectedOrigin) forbiddenOrigin();
+  } catch {
+    forbiddenOrigin();
+  }
+  return expectedOrigin;
+}
+
+export async function readJsonRequest(request: Request): Promise<unknown> {
   const url = new URL(request.url);
   const origin = request.headers.get("Origin");
   const site = request.headers.get("Sec-Fetch-Site");
   const host = request.headers.get("Host");
-  let expectedOrigin = url.origin;
+  const expectedOrigin = expectedApplicationOrigin(url, host);
 
-  // Next normalizes loopback URL hostnames to localhost. Browser Origin keeps
-  // the actual address, so use Host only after an exact local-host allowlist.
-  if (host !== null) {
-    if (!/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/i.test(host)) {
-      throw new RequestError(403, "FORBIDDEN_ORIGIN", "Use the local application's origin.");
-    }
-    try {
-      const hostUrl = new URL(`${url.protocol}//${host}`);
-      if (hostUrl.port !== url.port) throw new Error("Different local port");
-      expectedOrigin = hostUrl.origin;
-    } catch {
-      throw new RequestError(403, "FORBIDDEN_ORIGIN", "Use the local application's origin.");
-    }
-  }
-
-  // Browser mutations must come from this local app. Origin-free API clients
-  // are allowed; these checks are not authentication or production access rules.
+  // Browser mutations must come from the configured app. Origin-free API
+  // clients are allowed; these checks are not authentication or access rules.
   if (
-    !["127.0.0.1", "localhost"].includes(url.hostname) ||
     (origin !== null && origin !== expectedOrigin) ||
     (site !== null && site !== "same-origin" && site !== "none")
   ) {
-    throw new RequestError(403, "FORBIDDEN_ORIGIN", "Use the local application's origin.");
+    forbiddenOrigin();
   }
 
   const mediaType = request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase();

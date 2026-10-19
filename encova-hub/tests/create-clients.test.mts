@@ -289,6 +289,65 @@ test("forged hosts and different local ports are denied", async (context) => {
   assert.equal(writes, 0);
 });
 
+test("a configured HTTPS application origin permits its exact deployment host", async (context) => {
+  const originalOrigin = process.env.APP_ORIGIN;
+  const store = createClientStore();
+  context.mock.method(clientStore, "insert", (client: Client) => store.insert(client));
+  process.env.APP_ORIGIN = "https://encova-hub.vercel.app";
+  try {
+    const response = await POST(new Request("https://encova-hub.vercel.app/api/clients", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Host: "encova-hub.vercel.app",
+        Origin: "https://encova-hub.vercel.app",
+        "Sec-Fetch-Site": "same-origin",
+      },
+      body: '{"name":"Vercel client"}',
+    }));
+    assert.equal(response.status, 201);
+    assert.equal(store.list().length, 1);
+  } finally {
+    if (originalOrigin === undefined) delete process.env.APP_ORIGIN;
+    else process.env.APP_ORIGIN = originalOrigin;
+  }
+});
+
+test("nonlocal requests require the exact configured HTTPS application origin", async (context) => {
+  const originalOrigin = process.env.APP_ORIGIN;
+  let writes = 0;
+  context.mock.method(clientStore, "insert", () => { writes += 1; throw new Error("Unexpected write"); });
+  try {
+    process.env.APP_ORIGIN = "https://encova-hub.vercel.app";
+    for (const requestUrl of [
+      "https://unrelated.example.test/api/clients",
+      "http://encova-hub.vercel.app/api/clients",
+    ]) {
+      const response = await POST(new Request(requestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Host: new URL(requestUrl).host,
+          Origin: "https://encova-hub.vercel.app",
+        },
+        body: '{"name":"Denied"}',
+      }));
+      assert.equal(response.status, 403);
+    }
+    process.env.APP_ORIGIN = "http://encova-hub.vercel.app";
+    const insecureConfiguration = await POST(new Request("https://encova-hub.vercel.app/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Host: "encova-hub.vercel.app", Origin: "https://encova-hub.vercel.app" },
+      body: '{"name":"Denied"}',
+    }));
+    assert.equal(insecureConfiguration.status, 403);
+    assert.equal(writes, 0);
+  } finally {
+    if (originalOrigin === undefined) delete process.env.APP_ORIGIN;
+    else process.env.APP_ORIGIN = originalOrigin;
+  }
+});
+
 test("maximum-length Unicode fields still fit the request-size limit", async (context) => {
   const store = createClientStore();
   context.mock.method(clientStore, "insert", (client: Client) => store.insert(client));

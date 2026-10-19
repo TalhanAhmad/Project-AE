@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { listProjects, createProject } from "../../../modules/projects/service.ts";
 import { projectValidationErrors } from "../../../modules/projects/schemas.ts";
 import { DomainError } from "../../../server/errors.ts";
-import { readLocalJsonRequest, RequestError } from "../../../server/http.ts";
+import { readJsonRequest, RequestError } from "../../../server/http.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const data = await createProject(await readLocalJsonRequest(request));
+    const data = await createProject(await readJsonRequest(request));
     return Response.json({ data }, { status: 201, headers });
   } catch (error) { return failed(error, "create"); }
 }

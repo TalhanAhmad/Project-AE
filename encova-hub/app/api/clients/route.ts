@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 import { clientValidationErrors } from "../../../modules/clients/schemas.ts";
 import { createClient, listClients } from "../../../modules/clients/service.ts";
-import { readLocalJsonRequest, RequestError } from "../../../server/http.ts";
+import { readJsonRequest, RequestError } from "../../../server/http.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const input = await readLocalJsonRequest(request);
+    const input = await readJsonRequest(request);
     const client = await createClient(input);
     return Response.json(
       { data: client },
