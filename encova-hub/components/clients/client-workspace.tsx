@@ -144,7 +144,7 @@ export default function ClientWorkspace() {
       const result = clientCreatedResponseSchema.parse(await response.json());
       if (controller.signal.aborted) return;
       // Keep the confirmed creation visible even if the following GET fails.
-      setClients((current) => [...current.filter((client) => client.id !== result.data.id), result.data]);
+      setClients((current) => [result.data, ...current.filter((client) => client.id !== result.data.id)]);
       setForm(emptyForm);
       setSuccess(`Saved ${result.data.name}.`);
       await refreshClients();
@@ -162,7 +162,7 @@ export default function ClientWorkspace() {
     <div className="workspace">
       <header className="topbar">
         <a className="brand" href="/clients"><span className="brand-mark" aria-hidden="true">e</span> Encova Hub</a>
-        <span className="local-badge">Local workspace</span>
+        <nav aria-label="Workspace"><a className="nav-link" href="/projects">Projects</a><span className="local-badge">Local workspace</span></nav>
       </header>
       <main id="main-content">
         <div className="page-heading">
@@ -170,7 +170,7 @@ export default function ClientWorkspace() {
           <h1>Clients</h1>
           <p>Add a client and keep their details in one place.</p>
         </div>
-        <p className="notice"><strong>Learning workspace.</strong> Use fake details. This temporary list can reset when the server restarts.</p>
+        <p className="notice"><strong>Learning workspace.</strong> Use fake details. Clients are saved in your local database.</p>
         <div className="workspace-grid">
           <section className="panel" aria-labelledby="new-client-heading">
             <div className="panel-heading"><h2 id="new-client-heading">New client</h2><p>Start with a name. Everything else is optional.</p></div>
@@ -200,7 +200,7 @@ export default function ClientWorkspace() {
             {loading ? <p className="list-state" role="status">Loading clients…</p> : null}
             {listError ? <p className="feedback error" role="alert">{listError}</p> : null}
             {!loading && !listError && clients.length === 0 ? <div className="empty-state"><span className="empty-icon" aria-hidden="true">+</span><h3>No clients yet</h3><p>Add your first client using the form.</p></div> : null}
-            {clients.length > 0 ? <ul className="client-list" aria-label="Clients">{[...clients].reverse().map((client) => (
+            {clients.length > 0 ? <ul className="client-list" aria-label="Clients">{clients.map((client) => (
               <li className="client-card" key={client.id}>
                 <div className="client-avatar" aria-hidden="true">{Array.from(client.name)[0]?.toUpperCase()}</div>
                 <div className="client-details"><h3>{client.name}</h3>{client.company ? <p>{client.company}</p> : null}{client.email ? <p className="client-email">{client.email}</p> : null}{client.notes ? <details><summary>View notes</summary><p className="client-notes">{client.notes}</p></details> : null}</div>
@@ -209,7 +209,7 @@ export default function ClientWorkspace() {
           </section>
         </div>
       </main>
-      <footer>Encova Hub <span aria-hidden="true">·</span> Week 1 learning project</footer>
+      <footer>Encova Hub <span aria-hidden="true">·</span> Week 2 learning project</footer>
     </div>
   );
 }

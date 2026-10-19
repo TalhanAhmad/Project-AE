@@ -1,5 +1,7 @@
 # Client and project relationship: Week 2 sketch
 
+Update, 2026-10-18: Week 2 was subsequently authorized and this relationship is implemented in Prisma/PostgreSQL for project creation/listing. See [current progress](progress.md) and [database setup](database-setup.md). The original Week 1 planning snapshot follows.
+
 This is a planning sketch requested by Day 7. No database or project feature is implemented in Week 1.
 
 ```mermaid

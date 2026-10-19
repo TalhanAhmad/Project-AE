@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { isDatabaseText, databaseTextMessage } from "../shared/text.ts";
 
 export const createClientSchema = z.strictObject({
-  name: z.string().trim().min(1, "Enter a client name.").max(120),
-  email: z.string().trim().max(254).pipe(z.email()).optional(),
-  company: z.string().trim().max(120).optional(),
-  notes: z.string().trim().max(5000).optional(),
+  name: z.string().trim().min(1, "Enter a client name.").max(120).refine(isDatabaseText, databaseTextMessage),
+  email: z.string().trim().max(254).refine(isDatabaseText, databaseTextMessage).pipe(z.email()).optional(),
+  company: z.string().trim().max(120).refine(isDatabaseText, databaseTextMessage).optional(),
+  notes: z.string().trim().max(5000).refine(isDatabaseText, databaseTextMessage).optional(),
 });
 
 export type CreateClientInput = z.infer<typeof createClientSchema>;

@@ -172,3 +172,28 @@ Final evidence:
 - Git working/index whitespace checks passed. Temporary production servers stopped; development remains on loopback port 3000. No new commit, push or deployment.
 
 Remaining limits: process-local disposable memory can reset and has no global capacity cap, paging or durable recovery; no authentication or multi-user permissions; version-specific custom framework patch and disabled persistent caches; Chrome tested here, optional Chromium configuration not executed. These checks support the tested local learning flow and do not establish public-production readiness or absence of all possible vulnerabilities. Week 2 features remain unimplemented. Independent endpoint rebuilding and learner understanding remain unverified.
+
+## Week 2 final database and API review - 2026-10-18
+
+Week 1 was committed/pushed first as 48e0920 (Week one done), with matching remote/local hashes. Week 2 was explicitly authorized afterward and remains local/uncommitted. See [Week 2 report](week-2-report.md) and [database setup](database-setup.md).
+
+Persistent client/project services now use server-only PostgreSQL/Prisma queries with explicit DTOs. Project responses select only client ID/name, never private contact/notes. Schema enforces UUID keys, enum values, bounded text, nonblank names, positive versions and restrictive foreign keys. Project creation uses a parameterized client lock/transaction and rejects missing/archived clients before insert. IDs/timestamps are server-generated. No client-supplied object is passed unrestricted to Prisma.
+
+Role separation was verified: runtime cannot create schema/tables, read migration history or connect to the test database. It has reads/inserts and client UPDATE privilege required for row locks. The migration account owns schema changes; credentials are randomly generated ignored local files, not runtime admin access. Cluster listens on 127.0.0.1:55432 with SCRAM. Setup preserves existing environment/data, refuses occupied ports, checks pinned archive bytes and validates stored generated password format before bootstrap SQL. No public database or app deployment is configured.
+
+The first integration run exposed an actual UTC storage error (13/14 passed): adapter values looked correct while raw stored instants were five hours off. Set UTC per runtime/seed pool session; check both raw SQL and returned timestamps, wall time and boundary date-only values. An app restart replaced the cached development pool. Earlier synthetic fixtures were not rewritten.
+
+A final null-character JSON probe returned 500 because PostgreSQL text rejected input that had passed the original schema. Shared rules now reject U+0000 and unpaired Unicode surrogates before storage with 422 fields, preventing both avoidable database errors and lossy UTF-8 encoding. Unit, real database and real HTTP cases verify rejected input does not write. Existing unknown-field/origin/media/streamed body-limit/safe-error/TRACE checks remain active. Rendered project/client text remains escaped; duplicate submission and failed-refresh behavior are tested.
+
+Final actual evidence after the fixes:
+
+- 97 unit checks twice (194 executions); 14 real PostgreSQL integration checks twice (28); 30 production HTTP checks twice (60); 27 headless Chrome checks twice (54). Zero browser retries. These four repeated final suites total 336 named executions.
+- Typecheck, lint and production build passed. Both APIs are dynamic; client/project pages are browser-driven static shells.
+- Dedicated production helper used the separate test database. Integration ran separately and deletes only its own fixture IDs. Earlier development HTTP/browser suites intentionally added only fake fixtures to development. No development truncation/reset.
+- Fresh unique scratch database recreated successfully from migrations, seeded twice with exactly 2 clients/3 projects and correct SQL join; only its generated scratch DB dropped.
+- Real client/project IDs/names/relationship/due date/UTC timestamps survived verified app process stop/start. Separate SQL connection confirmed actual stored timestamps.
+- Clean source copy: frozen install/explicit Prisma generation passed without .env or old dependencies; final synchronized source passed 97 unit checks and production build without a database connection. Neither secrets/database files nor Git metadata were copied.
+- Production audit exit 0: no known advisories across 251 entries. Full audit exit 1: the same one high unpatched development-only braces issue across 577 entries, GHSA-vfj7-8cjw-p6xm. No suppression and no new reported advisory from added packages.
+- Targeted review-time scan: 83 text files, no tested credential-pattern matches, no exact matches to the four generated local passwords, and no forbidden intended secret/data/build artifacts. SQL has no BOM/CRLF. This is targeted evidence, not proof against all possible secret leakage.
+
+The user requested assistant completion with questions skipped. Independent SQL/explanation is unverified. Authentication, role/membership enforcement, pagination and deployment remain future work. Only fake local data is appropriate. Retain/review the inherited version-specific Next TRACE patch and disabled persistent caches on upgrades. Scratch schema recreation is not backup/restore of real data; later operations work remains necessary. No claim of universal security or public-production readiness is made.

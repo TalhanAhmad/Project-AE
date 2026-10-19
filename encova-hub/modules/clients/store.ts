@@ -6,6 +6,8 @@ export type ClientStore = {
   insert(client: Client): Client;
 };
 
+// Historical Week 1 fake store for isolated tests only. The application now uses
+// PostgreSQL through queries.ts; it never falls back to this temporary store.
 // Local practice only: every server process has its own disposable memory.
 // The optional initial records let tests use fake data without an HTTP reset
 // or seed endpoint. The application's store starts empty.

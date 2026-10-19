@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GET } from "../app/api/clients/route.ts";
 import { listClients } from "../modules/clients/service.ts";
-import { clientStore, createClientStore } from "../modules/clients/store.ts";
+import { createClientStore } from "../modules/clients/store.ts";
+import { clientRepository as clientStore } from "../modules/clients/queries.ts";
 import type { Client } from "../modules/clients/types.ts";
 
 const client: Client = {

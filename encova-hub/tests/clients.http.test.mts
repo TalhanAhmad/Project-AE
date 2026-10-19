@@ -140,6 +140,8 @@ test("twenty concurrent reads do not change current data", async () => {
 test("malformed JSON and invalid fields never create clients", async () => {
   const before = await readClients();
   const cases: [string, number][] = [
+    [JSON.stringify({ name: "Fake\u0000Name" }), 422],
+    [JSON.stringify({ name: "Valid", notes: "Fake\ud800Notes" }), 422],
     ["{", 400],
     ["", 400],
     ['{"name":" "}', 422],

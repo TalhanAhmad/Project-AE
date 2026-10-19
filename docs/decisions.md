@@ -1,4 +1,4 @@
-﻿# Implementation decisions
+# Implementation decisions
 
 ## 2026-10-18 - Scope and records
 
@@ -95,3 +95,27 @@ Pin Playwright 1.64.1 as a development dependency and run installed Chrome headl
 Production browser testing reproduced stale starter CSS despite a successful build. Fetched CSS lacked current selectors and computed layout overflowed. Following installed Next 16.4.2 documentation, disable persistent Turbopack caches for both build/dev. Rebuild then verify served CSS and browser behavior. This is a reproducible local workaround with slower fresh compilation, not a claim that the upstream cache bug is fixed; revisit only after a tested upgrade.
 
 Verify current local work in a fresh temporary copy, including untracked intended source files, with a frozen install/build. Do not call it a fresh GitHub clone: remote main is still the earlier Day 3 publication. Keep the client/project relationship sketch as documentation only.
+
+## 2026-10-18 - Week 1 publication and Week 2 implementation
+
+User explicitly requested publishing completed Week 1 first as "Week one done", then completing Week 2 with repeated checks and a report. Published 48e092007201366ec6308460757715312c02feea and verified matching GitHub main before Week 2 code. This authorizes the five Week 2 sessions now, not Week 3, automatic subsequent pushes or deployment. Preserve the earlier seven-day history in week-1-progress.md as a clearly labelled snapshot; progress.md alone carries current status.
+
+The architecture supplies Week 2's persistent clients/projects, migration and join/recreation goals, with five sessions per week. No separate Week 2 milestone was supplied, so the explicit five-session breakdown is our derived plan. Implement only Client/Project tables needed now. Future users/tasks/comments/permissions stay in their planned weeks. Existing folders remain in place.
+
+Use PostgreSQL 17.11 Windows zip linked by the official PostgreSQL page through EDB, pinned archive bytes, ignored .tools binaries and .local data/credentials, loopback port 55432 and SCRAM. No machine service or third-party hosted account required. Preserve existing .env/data and refuse an occupied port. Generate separate local admin/migration/runtime/test passwords, validate their generated hex format before bootstrap SQL, and never print/store them in source.
+
+Pin supported stable Prisma/client/adapter 7.10.1 instead of the available 8 release candidate; pg 8.23.1 and dotenv 18.0.8 are exact. Use the explicit Prisma client generator with ignored TypeScript output/.ts ESM imports so Node 24 and Next execute the same modules. Root postinstall runs generation; ordinary builds/isolated unit tests do not connect to the database. pnpm's default blocked dependency lifecycle scripts were not globally approved or bypassed; explicit CLI generation/migrations were executed and verified.
+
+Use lazy server-only database access with one reused bounded pool, explicit query fields and DTO conversion. Clients retain their Week 1 API shape. Keep the old memory factory only for isolated fixtures; there is no application memory fallback. Database timestamps are serialized to UTC, optional client nulls omitted, project description/date nulls explicit. Dates remain date-only values. Lists order createdAt DESC then UUID DESC; pagination remains later work.
+
+Prisma's installed PostgreSQL adapter assumes UTC when formatting/normalizing timestamps. A real SQL comparison exposed a five-hour mismatch under the initial Asia/Karachi session default. Set timezone=UTC for every pooled runtime/seed session and restart cached development pools. Regressions compare raw stored instants, adapter/session timezone and wall time. Do not silently rewrite existing records; earlier synthetic fixtures may retain their pre-fix offsets.
+
+Add strict shared rejection of U+0000 and malformed Unicode before PostgreSQL: a real null-character HTTP probe otherwise caused generic 500, and encoding unpaired surrogates could alter text. This applies in browser and service schemas with useful field errors; no invalid text reaches the database. Keep valid Unicode code-point limits consistent with PostgreSQL.
+
+Project creation uses a parameterized client FOR UPDATE lock inside a transaction, checks existence/archive state, then inserts. Missing client ->404, archived ->409, invalid input ->422. Runtime requires client UPDATE privilege for those row locks but cannot create schema/tables, read migration history or connect to the separate test DB. Grant only explicit application-table privileges, not blanket defaults on future/migration tables. No edit/archive/delete API is exposed yet.
+
+Keep existing Node tests rather than rewrite passing Week 1 coverage into another runner. Add actual PostgreSQL integration tests with a guarded separate _test URL and cleanup restricted to created fixture IDs. Run live write suites sequentially and use a test-backed production helper for final rounds. Browser tests cover both successful real API flows and controlled failure responses. No hidden HTTP reset/seed endpoint is introduced.
+
+Use an explicit fixed-ID synthetic seed and parameterized join for learning. Recreation creates a unique scratch database, migrates/seeds twice/checks exact relationships, then drops only that same verified new database. It does not reset development/test DBs or substitute for later backup/restore work. Verify application persistence through an actual process stop/start plus independent SQL timestamp comparison. Clean-source install/build checks exclude .env, database data/binaries, generated/dependency/build output and Git metadata.
+
+Keep SQL migrations BOM-free and LF through .gitattributes; PowerShell's initial BOM caused a migration failure before application tables existed. Marked only that failed migration rolled back after inspecting the effect, then reapplied; no reset. Never generalize that recovery to an unrelated failure or edit successfully applied migration bytes.

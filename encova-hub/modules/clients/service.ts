@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { createClientSchema } from "./schemas.ts";
-import { clientStore, type ClientStore } from "./store.ts";
+import { clientRepository, type ClientRepository } from "./queries.ts";
 import type { Client } from "./types.ts";
 
 function toClientDto(client: Client): Client {
@@ -17,13 +17,13 @@ function toClientDto(client: Client): Client {
   };
 }
 
-export async function listClients(store: ClientStore = clientStore): Promise<Client[]> {
-  return store.list().map(toClientDto);
+export async function listClients(store: ClientRepository = clientRepository): Promise<Client[]> {
+  return (await store.list()).map(toClientDto);
 }
 
 export async function createClient(
   input: unknown,
-  store: ClientStore = clientStore,
+  store: ClientRepository = clientRepository,
 ): Promise<Client> {
   // Validate at the service boundary so every caller follows the same rules.
   // No ID, timestamp, or browser-supplied object is passed straight to storage.
@@ -39,5 +39,5 @@ export async function createClient(
     updatedAt: now,
   };
 
-  return toClientDto(store.insert(client));
+  return toClientDto(await store.insert(client));
 }

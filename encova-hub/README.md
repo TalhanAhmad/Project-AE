@@ -1,20 +1,23 @@
-﻿# Encova Hub application
+# Encova Hub application
 
-This folder holds the Next.js App Router app, strict TypeScript, Tailwind, tests and pinned pnpm lockfile. Read the [project README](../README.md) for setup, API rules, test commands and limitations. Read [progress](../docs/progress.md) before each session.
+Read the [project README](../README.md) and [database setup](../docs/database-setup.md) for setup, API rules, commands and limitations. Read [current progress](../docs/progress.md) before each session.
 
 ```powershell
 npx.cmd --yes pnpm@10.34.7 install --frozen-lockfile
+npx.cmd --yes pnpm@10.34.7 db:setup
+npx.cmd --yes pnpm@10.34.7 db:migrate
+npx.cmd --yes pnpm@10.34.7 db:seed
 npx.cmd --yes pnpm@10.34.7 dev
 ```
 
-Open http://127.0.0.1:3000/clients. Use fake details only; process-local memory resets. No login or database is required. Ctrl+C stops the server.
+Open http://127.0.0.1:3000/clients or /projects. Use fake details locally. PostgreSQL now persists data across app restarts. db:setup is an optional Windows portable-database helper and preserves existing .env/data. db:start/db:stop control that separate database process. For another PostgreSQL installation, configure the three placeholder URLs from .env.example and follow the setup guide.
 
-Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` through pinned npx.cmd as shown in the root README. With the server running, run `pnpm test:http` then `pnpm test:browser` sequentially. Unit checks: 64. HTTP checks: 19. Browser checks: 14, using installed Chrome by default. TEST_BASE_URL selects another local port; PLAYWRIGHT_CHANNEL selects another installed supported browser. Screenshots/traces are ignored.
+Run typecheck, lint, test (97 unit checks), test:integration (14 real-PostgreSQL checks), and build through pinned npx.cmd. Prisma generation runs during install; db:generate updates it after schema changes. With a local server running, test:http runs 30 checks and test:browser runs 27 Chrome checks. Live suites add synthetic records; target a test-backed server and run sequentially. The integration suite requires a separate local _test database and removes only its own fixture IDs. TEST_BASE_URL chooses another local port.
 
-The /clients page renders components/clients/client-workspace.tsx. GET and POST /api/clients call the server-only modules/clients/service.ts and store.ts. Shared Zod validation lives in schemas.ts; the browser checks response JSON too. The service validates before insert, generates IDs/UTC timestamps and returns explicit fields. Root page redirects to /clients. Layout supplies metadata, global CSS supplies styles, and external fonts are unnecessary.
+Use db:verify-recreation for a fresh scratch-database migration/seed/join check with the optional local helper. db:join demonstrates a parameterized client/project join. persistence:create, then an actual app restart, then persistence:check verifies saved IDs/names/dates/timestamps. These commands use only fake fixtures; no production deployment is configured.
 
-The form handles loading/empty/pending/success/errors. Failures keep input; a confirmed write remains visible if its refresh fails. No POST is automatically replayed. The server enforces strict fields, JSON media, a 32 KiB streamed limit and local origin/host rules. These are not authentication.
+Pages contain interactive workspaces. GET/POST client/project Route Handlers call services and server-only query modules. Shared Zod schemas validate input and browser responses. server/database.ts reuses one bounded Prisma pool with UTC sessions. schema.prisma/migrations hold UUID relationships, PostgreSQL status enum, timestamptz/date fields, constraints and restrictive deletion. Runtime cannot create tables or access migration history. Clients have UPDATE privilege for required row locks; API edit/archive/delete routes are not implemented.
 
-Keep patches/next@16.4.2.patch and pnpm-workspace.yaml together with the lockfile. This custom TRACE safeguard applies to standard Next CLI servers and needs review on upgrades. Persistent Turbopack caches are disabled after reproducing stale production CSS. See [security review](../docs/security-review.md) for results and the remaining development-only advisory.
+No authentication or multi-user permissions yet; those are Week 3. The old modules/clients/store.ts is a test-only Week 1 fixture, with no runtime fallback. Practice types/examples remain in learning/ and types/domain.ts; see [learning guide](learning/README.md).
 
-Day 2 practice is in learning/day-02.mts, types/domain.ts and modules/clients/types.ts. Read [the learning guide](learning/README.md). Week 2 database/authentication/project/task features and public deployment are outside this milestone. Working code does not verify independent learning.
+Keep the custom Next TRACE patch, pnpm workspace config, lockfile and LF attributes together. Persistent Turbopack caches remain disabled after the verified stale-CSS issue. Generated files, test artifacts, database data and secrets are ignored. See [security review](../docs/security-review.md) for the remaining development-only dependency advisory and actual verification evidence.

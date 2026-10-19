@@ -3,7 +3,8 @@ import { test } from "node:test";
 import { ZodError } from "zod";
 import { GET, POST } from "../app/api/clients/route.ts";
 import { createClient } from "../modules/clients/service.ts";
-import { clientStore, createClientStore } from "../modules/clients/store.ts";
+import { createClientStore } from "../modules/clients/store.ts";
+import { clientRepository as clientStore } from "../modules/clients/queries.ts";
 import type { Client } from "../modules/clients/types.ts";
 import { MAX_JSON_BODY_BYTES } from "../server/http.ts";
 
@@ -63,6 +64,10 @@ test("Unicode names use the installed Zod character rules", async () => {
 });
 
 const invalidInputs: [string, unknown][] = [
+  ["null character in name", { name: "Fake\u0000Name" }],
+  ["null character in company", { name: "Valid", company: "Fake\u0000Company" }],
+  ["null character in notes", { name: "Valid", notes: "Fake\u0000Notes" }],
+  ["unpaired surrogate", { name: "Fake\ud800Name" }],
   ["missing name", {}],
   ["blank name", { name: " \t\n " }],
   ["long name", { name: "a".repeat(121) }],

@@ -1,0 +1,49 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+}
+
+model Client {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @db.VarChar(120)
+  email      String?   @db.VarChar(254)
+  company    String?   @db.VarChar(120)
+  notes      String?   @db.VarChar(5000)
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+  version    Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  projects   Project[]
+
+  @@map("clients")
+}
+
+model Project {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId    String        @map("client_id") @db.Uuid
+  name        String        @db.VarChar(120)
+  description String?       @db.VarChar(5000)
+  status      ProjectStatus @default(PLANNED)
+  dueDate     DateTime?      @map("due_date") @db.Date
+  archivedAt  DateTime?      @map("archived_at") @db.Timestamptz(3)
+  version     Int           @default(1)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([clientId])
+  @@map("projects")
+}
