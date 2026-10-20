@@ -7,6 +7,7 @@
 - Completed sessions: 5.
 - Remaining sessions: 0 technical sessions.
 - Last session date (Asia/Karachi): 2026-10-19.
+- Current work: Prepare production deployment for the client/project APIs by provisioning Neon PostgreSQL, applying migrations, redeploying, and verifying the live endpoints; currently blocked on accepting Neon Marketplace terms.
 - Blockers: Neon Marketplace terms must be accepted before the linked Vercel project can create its managed production PostgreSQL database. Without `DATABASE_URL`, the deployed API cannot read or create clients/projects.
 - Known issue: one high unpatched development-only braces advisory; production audit has no known advisories. Independent learning is unverified.
 - Exact next task: Accept the Neon Marketplace terms, provision the production database, run the saved migration with Vercel production credentials, redeploy, and test the live API.
