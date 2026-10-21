@@ -6,6 +6,34 @@ const base = new URL(process.env.TEST_BASE_URL ?? "http://127.0.0.1:3000");
 if (base.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(base.hostname)) throw new Error("Local HTTP server required.");
 const endpoint = new URL("/api/projects", base);
 let clientId: string;
+const nativeFetch = globalThis.fetch;
+let sessionCookie: Promise<string> | undefined;
+
+async function ownerCookie(): Promise<string> {
+  const email = process.env.TEST_AUTH_EMAIL;
+  const password = process.env.TEST_AUTH_PASSWORD;
+  if (!email || !password) throw new Error("Set TEST_AUTH_EMAIL and TEST_AUTH_PASSWORD for authenticated HTTP checks.");
+  const csrf = await nativeFetch(new URL("/api/auth/csrf", base));
+  const csrfBody = await csrf.json() as { csrfToken: string };
+  const initial = csrf.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  const response = await nativeFetch(new URL("/api/auth/callback/credentials", base), {
+    method: "POST",
+    redirect: "manual",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: initial },
+    body: new URLSearchParams({ csrfToken: csrfBody.csrfToken, email, password, callbackUrl: new URL("/projects", base).href, json: "true" }),
+  });
+  const session = response.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  if (response.status !== 302 || !session) throw new Error("The HTTP test owner could not sign in.");
+  return session;
+}
+
+async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const target = input instanceof Request ? new URL(input.url) : new URL(input instanceof URL ? input.href : input, base);
+  if (target.origin !== base.origin) return nativeFetch(input, init);
+  const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
+  headers.set("Cookie", await (sessionCookie ??= ownerCookie()));
+  return nativeFetch(input, { ...init, headers });
+}
 const clientName = `HTTP client ${randomUUID()}`;
 const privateNotes = `private-fake-notes-${randomUUID()}`;
 async function post(body: unknown, headers: Record<string, string> = {}) {

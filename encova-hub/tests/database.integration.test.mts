@@ -7,9 +7,14 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 import pg from "pg";
 import { getDatabase } from "../server/database.ts";
-import { createClient } from "../modules/clients/service.ts";
-import { createProject } from "../modules/projects/service.ts";
+import { createClient as createClientForUser } from "../modules/clients/service.ts";
+import { createProject as createProjectForUser } from "../modules/projects/service.ts";
+import { listClients } from "../modules/clients/service.ts";
+import { listProjects } from "../modules/projects/service.ts";
+import { addMember, listMembers } from "../modules/memberships/service.ts";
+import { resolveActiveUser } from "../modules/auth/service.ts";
 import { DomainError } from "../server/errors.ts";
+import type { AppUser } from "../modules/auth/types.ts";
 
 const configuredTest = process.env.TEST_DATABASE_URL;
 if (!configuredTest || !process.env.DATABASE_URL) throw new Error("Configure separate development/test databases.");
@@ -21,6 +26,10 @@ if (!['127.0.0.1', 'localhost'].includes(testUrl.hostname) || !testUrl.pathname.
 process.env.DATABASE_URL = configuredTest;
 const sql = new pg.Client({ connectionString: configuredTest, connectionTimeoutMillis: 5000 });
 const ids: string[] = [];
+const userIds: string[] = [];
+const owner: AppUser = { id: randomUUID(), authSubject: "test:owner", email: "owner@example.test", name: "Test Owner", role: "OWNER" };
+const createClient = (input: unknown) => createClientForUser(owner, input);
+const createProject = (input: unknown) => createProjectForUser(owner, input);
 const db = getDatabase();
 const require = createRequire(import.meta.url);
 
@@ -34,6 +43,9 @@ before(async () => {
 after(async () => {
   // Delete only fixture IDs created by this run; never truncate shared tables.
   try {
+    await db.projectMember.deleteMany({ where: { userId: { in: userIds } } });
+    await db.credentialIdentity.deleteMany({ where: { userId: { in: userIds } } });
+    await db.user.deleteMany({ where: { id: { in: userIds } } });
     await db.project.deleteMany({ where: { clientId: { in: ids } } });
     await db.client.deleteMany({ where: { id: { in: ids } } });
   } finally { await db.$disconnect(); await sql.end(); }
@@ -43,6 +55,40 @@ async function fixture(name = `Integration ${randomUUID()}`) {
   ids.push(client.id); return client;
 }
 async function projectCount() { return Number((await sql.query("SELECT count(*) FROM projects")).rows[0].count); }
+async function userFixture(role: "OWNER" | "MEMBER" = "MEMBER") {
+  const suffix = randomUUID();
+  const user = await db.user.create({
+    data: { authSubject: `test:${suffix}`, email: `user-${suffix}@example.test`, name: `Test ${role}`, role, isActive: true },
+  });
+  userIds.push(user.id);
+  return user;
+}
+
+test("active linked identities resolve while unlinked and inactive identities are denied", async () => {
+  const user = await userFixture();
+  assert.equal((await resolveActiveUser(user.authSubject)).id, user.id);
+  await assert.rejects(resolveActiveUser(`test:missing-${randomUUID()}`), (error) => error instanceof DomainError && error.status === 403);
+  await db.user.update({ where: { id: user.id }, data: { isActive: false } });
+  await assert.rejects(resolveActiveUser(user.authSubject), (error) => error instanceof DomainError && error.status === 403);
+});
+
+test("membership scopes project reads and owners alone can access client contacts or add members", async () => {
+  const client = await fixture();
+  const visible = await createProject({ clientId: client.id, name: "Visible to member" });
+  const hidden = await createProject({ clientId: client.id, name: "Hidden from member" });
+  const memberRecord = await userFixture("MEMBER");
+  const member: AppUser = { id: memberRecord.id, authSubject: memberRecord.authSubject, email: memberRecord.email, name: memberRecord.name, role: "MEMBER" };
+
+  const membership = await addMember(owner, visible.id, { userId: member.id });
+  assert.equal(membership.userId, member.id);
+  assert.deepEqual(await addMember(owner, visible.id, { userId: member.id }), membership);
+  assert.deepEqual((await listMembers(owner, visible.id)).map((entry) => entry.userId), [member.id]);
+  assert.deepEqual((await listProjects(member)).map((project) => project.id), [visible.id]);
+  assert.equal((await listProjects(member)).some((project) => project.id === hidden.id), false);
+  await assert.rejects(listClients(member), (error) => error instanceof DomainError && error.status === 403);
+  await assert.rejects(createProjectForUser(member, { clientId: client.id, name: "Member write" }), (error) => error instanceof DomainError && error.status === 403);
+  await assert.rejects(addMember(member, visible.id, { userId: member.id }), (error) => error instanceof DomainError && error.status === 403);
+});
 
 test("real client service persists a safe DTO with database version/timestamps", async () => {
   assert.equal((await db.$queryRaw<{ TimeZone: string }[]>`SHOW TIMEZONE`)[0].TimeZone, "UTC");

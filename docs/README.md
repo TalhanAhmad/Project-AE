@@ -6,6 +6,8 @@
 - [Week 1 historical progress](week-1-progress.md): preserved snapshot; current status belongs only in progress.md.
 - [Week 2 plan](week-2-plan.md) and [session records](week-02/day-01.md): five sessions derived from the architecture and actual work/checks.
 - [Week 2 report](week-2-report.md): completed persistence/project work, final repeated checks, fixes and remaining limitations.
+- [Week 3 plan](week-3-plan.md) and [session records](week-03/day-01.md): authentication, role, and project-membership work.
+- [Week 3 report](week-3-report.md): completed authorization work, actual checks, production activation steps, and limitations.
 - [Database setup](database-setup.md): PostgreSQL setup, accounts, migrations, synthetic seed, join and safe recreation exercises.
 - [Daily records](days/day-01.md): day-01 through day-07 record evidence and learning.
 - [Decisions](decisions.md): choices and their reasons.

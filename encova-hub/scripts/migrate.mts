@@ -35,6 +35,10 @@ try {
   await connection.query(`REVOKE ALL ON TABLE public._prisma_migrations FROM ${role}`);
   await connection.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
   await connection.query(`GRANT SELECT, INSERT ON TABLE public.clients, public.projects TO ${role}`);
+  // The app resolves active roles from the database on every request and may
+  // add an idempotent project membership. It still receives no schema rights.
+  await connection.query(`GRANT SELECT ON TABLE public.users, public.credential_identities, public.project_members TO ${role}`);
+  await connection.query(`GRANT INSERT, UPDATE ON TABLE public.project_members TO ${role}`);
   // PostgreSQL requires UPDATE privilege for SELECT ... FOR UPDATE client locks.
   await connection.query(`GRANT UPDATE ON TABLE public.clients TO ${role}`);
   console.log("Migrations applied; runtime has data access/client-lock privileges, no schema or migration-history access.");

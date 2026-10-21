@@ -12,11 +12,13 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   forbidOnly: true,
+  globalSetup: "./tests/e2e/auth.setup.ts",
   use: {
     baseURL,
     channel: process.env.PLAYWRIGHT_CHANNEL ?? "chrome",
     headless: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    storageState: "test-results/auth-owner.json",
   },
 });

@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 import { GET } from "../app/api/clients/route.ts";
 import { listClients } from "../modules/clients/service.ts";
 import { createClientStore } from "../modules/clients/store.ts";
 import { clientRepository as clientStore } from "../modules/clients/queries.ts";
 import type { Client } from "../modules/clients/types.ts";
+import type { AppUser } from "../modules/auth/types.ts";
+import { currentUserResolver } from "../server/current-user.ts";
+
+const owner: AppUser = { id: "550e8400-e29b-41d4-a716-446655440001", authSubject: "test:owner", email: "owner@example.test", name: "Test Owner", role: "OWNER" };
+mock.method(currentUserResolver, "get", async () => owner);
 
 const client: Client = {
   id: "550e8400-e29b-41d4-a716-446655440000",
@@ -39,7 +44,7 @@ test("independent stores do not share their fixture data", () => {
 
 test("service serializes explicit fields and omits internal fields", async () => {
   const storedRecord = { ...client, internalToken: "fake-private-test-value" };
-  const result = await listClients(createClientStore([storedRecord]));
+  const result = await listClients(owner, createClientStore([storedRecord]));
   assert.deepEqual(JSON.parse(JSON.stringify(result)), [client]);
   assert.equal(Object.hasOwn(result[0], "internalToken"), false);
 });
@@ -51,7 +56,7 @@ test("service preserves supplied optional client fields", async () => {
     email: "client@example.test",
     notes: "Fake local practice data",
   };
-  assert.deepEqual(await listClients(createClientStore([fullClient])), [fullClient]);
+  assert.deepEqual(await listClients(owner, createClientStore([fullClient])), [fullClient]);
 });
 
 test("GET returns 200, no-store, and an empty data array", async (context) => {

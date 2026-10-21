@@ -24,12 +24,20 @@ function serialize(row: ProjectRow): Project {
 
 export type ProjectRepository = {
   list(): Promise<Project[]>;
+  listForMember?(userId: string): Promise<Project[]>;
   create(input: CreateProjectInput): Promise<Project>;
 };
 
 export const projectRepository: ProjectRepository = {
   async list() {
     return (await getDatabase().project.findMany({ select, orderBy: [{ createdAt: "desc" }, { id: "desc" }] })).map(serialize);
+  },
+  async listForMember(userId) {
+    return (await getDatabase().project.findMany({
+      where: { members: { some: { userId } } },
+      select,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    })).map(serialize);
   },
   async create(input) {
     return getDatabase().$transaction(async (transaction) => {

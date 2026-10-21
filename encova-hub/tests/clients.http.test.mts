@@ -14,6 +14,34 @@ if (
 
 const endpoint = new URL("/api/clients", baseUrl);
 const timeout = () => AbortSignal.timeout(10_000);
+const nativeFetch = globalThis.fetch;
+let sessionCookie: Promise<string> | undefined;
+
+async function ownerCookie(): Promise<string> {
+  const email = process.env.TEST_AUTH_EMAIL;
+  const password = process.env.TEST_AUTH_PASSWORD;
+  if (!email || !password) throw new Error("Set TEST_AUTH_EMAIL and TEST_AUTH_PASSWORD for authenticated HTTP checks.");
+  const csrf = await nativeFetch(new URL("/api/auth/csrf", baseUrl));
+  const csrfBody = await csrf.json() as { csrfToken: string };
+  const initial = csrf.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  const response = await nativeFetch(new URL("/api/auth/callback/credentials", baseUrl), {
+    method: "POST",
+    redirect: "manual",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: initial },
+    body: new URLSearchParams({ csrfToken: csrfBody.csrfToken, email, password, callbackUrl: new URL("/projects", baseUrl).href, json: "true" }),
+  });
+  const session = response.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  if (response.status !== 302 || !session) throw new Error("The HTTP test owner could not sign in.");
+  return session;
+}
+
+async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const target = input instanceof Request ? new URL(input.url) : new URL(input instanceof URL ? input.href : input, baseUrl);
+  if (target.origin !== baseUrl.origin) return nativeFetch(input, init);
+  const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
+  headers.set("Cookie", await (sessionCookie ??= ownerCookie()));
+  return nativeFetch(input, { ...init, headers });
+}
 
 async function readClients() {
   const response = await fetch(endpoint, { signal: timeout() });

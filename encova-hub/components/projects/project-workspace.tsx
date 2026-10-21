@@ -9,6 +9,8 @@ import {
   type ProjectField, type ProjectFieldErrors,
 } from "../../modules/projects/schemas";
 import type { Project } from "../../modules/projects/types";
+import type { AppUser } from "../../modules/auth/types";
+import SignOutButton from "../auth/sign-out-button";
 
 const emptyForm = { clientId: "", name: "", description: "", status: "PLANNED", dueDate: "" };
 const statusLabels = { PLANNED: "Planned", ACTIVE: "Active", ON_HOLD: "On hold", COMPLETED: "Completed" };
@@ -19,14 +21,15 @@ async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
   return response.json();
 }
 
-function readWorkspace(signal: AbortSignal) {
+function readWorkspace(signal: AbortSignal, canManage: boolean) {
   return Promise.allSettled([
-    readJson("/api/clients", signal).then((value) => clientListResponseSchema.parse(value).data),
+    (canManage ? readJson("/api/clients", signal) : Promise.resolve({ data: [] })).then((value) => clientListResponseSchema.parse(value).data),
     readJson("/api/projects", signal).then((value) => projectListResponseSchema.parse(value).data),
   ] as const);
 }
 
-export default function ProjectWorkspace() {
+export default function ProjectWorkspace({ user }: { user: AppUser }) {
+  const canManage = user.role === "OWNER";
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -59,9 +62,9 @@ export default function ProjectWorkspace() {
   useEffect(() => {
     const controller = new AbortController();
     getRequest.current = controller;
-    void readWorkspace(controller.signal).then((result) => applyResults(result, controller.signal));
+    void readWorkspace(controller.signal, canManage).then((result) => applyResults(result, controller.signal));
     return () => { getRequest.current?.abort(); postRequest.current?.abort(); };
-  }, [applyResults]);
+  }, [applyResults, canManage]);
 
   useEffect(() => {
     if (!saving && pendingFocus.current) {
@@ -77,7 +80,7 @@ export default function ProjectWorkspace() {
     setLoading(true);
     setClientError("");
     setListError("");
-    applyResults(await readWorkspace(controller.signal), controller.signal);
+    applyResults(await readWorkspace(controller.signal, canManage), controller.signal);
   }
 
   function showErrors(errors: ProjectFieldErrors) {
@@ -95,7 +98,7 @@ export default function ProjectWorkspace() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting.current || loading || clientError || clients.length === 0) return;
+    if (!canManage || submitting.current || loading || clientError || clients.length === 0) return;
     setSuccess(""); setSubmitError(""); setFields({});
     const input = createProjectSchema.safeParse({
       clientId: form.clientId, name: form.name, status: form.status,
@@ -146,13 +149,13 @@ export default function ProjectWorkspace() {
     <div className="workspace">
       <header className="topbar">
         <a className="brand" href="/clients"><span className="brand-mark" aria-hidden="true">e</span> Encova Hub</a>
-        <nav aria-label="Workspace"><a className="nav-link" href="/clients">Clients</a><span className="local-badge">Local workspace</span></nav>
+        <nav aria-label="Workspace">{canManage ? <a className="nav-link" href="/clients">Clients</a> : null}<span className="local-badge">{user.name} · {canManage ? "Owner" : "Member"}</span><SignOutButton /></nav>
       </header>
       <main>
         <div className="page-heading"><p className="eyebrow">YOUR WORKSPACE / PROJECTS</p><h1>Projects</h1><p>Connect each piece of work to a client.</p></div>
-        <p className="notice"><strong>Learning workspace.</strong> Use fake details. Projects are saved in your local database.</p>
+        <p className="notice"><strong>{canManage ? "Owner" : "Member"} workspace.</strong> Projects are saved in the database.</p>
         <div className="workspace-grid">
-          <section className="panel" aria-labelledby="new-project-heading">
+          {canManage ? <section className="panel" aria-labelledby="new-project-heading">
             <div className="panel-heading"><h2 id="new-project-heading">New project</h2><p>Choose a client and give the project a name.</p></div>
             {clientError ? <p className="feedback error" role="alert">{clientError}</p> : null}
             {!loading && !clientError && clients.length === 0 ? <p className="feedback">No clients yet. <a className="nav-link" href="/clients">Add a client first</a>.</p> : null}
@@ -170,7 +173,10 @@ export default function ProjectWorkspace() {
               {fields._form?.length ? <p className="feedback error" role="alert">{fields._form.join(" ")}</p> : null}
               {success ? <p className="feedback success" role="status">{success}</p> : null}
             </form>
-          </section>
+          </section> : <section className="panel" aria-labelledby="member-access-heading">
+            <div className="panel-heading"><h2 id="member-access-heading">Project access</h2><p>You can view projects that an owner has added you to.</p></div>
+            <p className="feedback">Only owners can create projects, manage clients, or change project membership.</p>
+          </section>}
           <section className="panel" aria-labelledby="project-list-heading" aria-busy={loading}>
             <div className="list-heading"><div><h2 id="project-list-heading">Your projects <span className="count">{projects.length}</span></h2><p>The most recently added projects appear first.</p></div><button className="secondary-button" disabled={loading || saving} onClick={() => void refresh()}>{listError || clientError ? "Retry" : "Refresh"}</button></div>
             {loading ? <p className="list-state" role="status">Loading workspace…</p> : null}

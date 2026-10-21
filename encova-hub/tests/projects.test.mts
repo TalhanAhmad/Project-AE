@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 import { ZodError } from "zod";
 import { GET, POST } from "../app/api/projects/route.ts";
 import { projectRepository } from "../modules/projects/queries.ts";
@@ -8,8 +8,13 @@ import { createProject } from "../modules/projects/service.ts";
 import { createProjectSchema, type CreateProjectInput } from "../modules/projects/schemas.ts";
 import type { Project } from "../modules/projects/types.ts";
 import { DomainError } from "../server/errors.ts";
+import type { AppUser } from "../modules/auth/types.ts";
+import { currentUserResolver } from "../server/current-user.ts";
 
 const clientId = randomUUID();
+const owner: AppUser = { id: randomUUID(), authSubject: "test:owner", email: "owner@example.test", name: "Test Owner", role: "OWNER" };
+mock.method(currentUserResolver, "get", async () => owner);
+const ownedProject = (input: unknown, repository: Parameters<typeof createProject>[2]) => createProject(owner, input, repository);
 const record: Project = {
   id: randomUUID(), clientId, name: "Example Project", status: "PLANNED",
   description: null, dueDate: null, version: 1,
@@ -57,7 +62,7 @@ const invalid: [string, unknown][] = [
 for (const [label, value] of invalid) {
   test(`invalid ${label} never calls project storage`, async () => {
     let writes = 0;
-    await assert.rejects(createProject(value, {
+    await assert.rejects(ownedProject(value, {
       list: async () => [],
       create: async () => { writes++; return record; },
     }), ZodError);
@@ -66,7 +71,7 @@ for (const [label, value] of invalid) {
 }
 test("valid service input reaches the repository as explicit parsed data", async () => {
   let received: CreateProjectInput | undefined;
-  const output = await createProject({ clientId, name: " Trim Me " }, {
+  const output = await ownedProject({ clientId, name: " Trim Me " }, {
     list: async () => [], create: async (value) => { received = value; return record; },
   });
   assert.deepEqual(received, { clientId, name: "Trim Me", status: "PLANNED" });

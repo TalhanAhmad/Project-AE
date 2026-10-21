@@ -12,6 +12,8 @@ import {
   type ClientFieldErrors,
 } from "../../modules/clients/schemas";
 import type { Client } from "../../modules/clients/types";
+import type { AppUser } from "../../modules/auth/types";
+import SignOutButton from "../auth/sign-out-button";
 
 const emptyForm = { name: "", email: "", company: "", notes: "" };
 const listFailure = "Could not refresh the list. Your last loaded clients are still shown. Please retry.";
@@ -22,7 +24,7 @@ async function requestClients(signal: AbortSignal) {
   return clientListResponseSchema.parse(await response.json()).data;
 }
 
-export default function ClientWorkspace() {
+export default function ClientWorkspace({ user }: { user: AppUser }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
@@ -162,7 +164,7 @@ export default function ClientWorkspace() {
     <div className="workspace">
       <header className="topbar">
         <a className="brand" href="/clients"><span className="brand-mark" aria-hidden="true">e</span> Encova Hub</a>
-        <nav aria-label="Workspace"><a className="nav-link" href="/projects">Projects</a><span className="local-badge">Local workspace</span></nav>
+        <nav aria-label="Workspace"><a className="nav-link" href="/projects">Projects</a><span className="local-badge">{user.name} · Owner</span><SignOutButton /></nav>
       </header>
       <main id="main-content">
         <div className="page-heading">
@@ -170,7 +172,7 @@ export default function ClientWorkspace() {
           <h1>Clients</h1>
           <p>Add a client and keep their details in one place.</p>
         </div>
-        <p className="notice"><strong>Learning workspace.</strong> Use fake details. Clients are saved in your local database.</p>
+        <p className="notice"><strong>Owner workspace.</strong> Use fake details. Clients are saved in the database.</p>
         <div className="workspace-grid">
           <section className="panel" aria-labelledby="new-client-heading">
             <div className="panel-heading"><h2 id="new-client-heading">New client</h2><p>Start with a name. Everything else is optional.</p></div>

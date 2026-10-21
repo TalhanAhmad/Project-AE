@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 import { ZodError } from "zod";
 import { GET, POST } from "../app/api/clients/route.ts";
 import { createClient } from "../modules/clients/service.ts";
 import { createClientStore } from "../modules/clients/store.ts";
 import { clientRepository as clientStore } from "../modules/clients/queries.ts";
 import type { Client } from "../modules/clients/types.ts";
+import type { AppUser } from "../modules/auth/types.ts";
+import { currentUserResolver } from "../server/current-user.ts";
 import { MAX_JSON_BODY_BYTES } from "../server/http.ts";
 
 const endpoint = "http://127.0.0.1:3000/api/clients";
 const uuid = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/;
+const owner: AppUser = { id: "550e8400-e29b-41d4-a716-446655440001", authSubject: "test:owner", email: "owner@example.test", name: "Test Owner", role: "OWNER" };
+mock.method(currentUserResolver, "get", async () => owner);
+const ownedClient = (input: unknown, store = createClientStore()) => createClient(owner, input, store);
 
 function request(body: string, headers: HeadersInit = {}): Request {
   return new Request(endpoint, {
@@ -22,7 +27,7 @@ function request(body: string, headers: HeadersInit = {}): Request {
 test("createClient trims input and generates UUID and UTC timestamps", async () => {
   const store = createClientStore();
   const before = Date.now();
-  const client = await createClient({
+  const client = await ownedClient({
     name: "  Example Client  ",
     email: " client@example.test ",
     company: " Example Agency ",
@@ -41,7 +46,7 @@ test("createClient trims input and generates UUID and UTC timestamps", async () 
 
 test("creation supports omitted optional fields and returns isolated copies", async () => {
   const store = createClientStore();
-  const result = await createClient({ name: "Only name" }, store);
+  const result = await ownedClient({ name: "Only name" }, store);
   assert.deepEqual(Object.keys(JSON.parse(JSON.stringify(result))).sort(), [
     "createdAt", "id", "name", "updatedAt",
   ]);
@@ -50,15 +55,15 @@ test("creation supports omitted optional fields and returns isolated copies", as
 });
 
 test("the 120-character boundary accepts names after trimming", async () => {
-  const result = await createClient({ name: ` ${"a".repeat(120)} ` }, createClientStore());
+  const result = await ownedClient({ name: ` ${"a".repeat(120)} ` });
   assert.equal(result.name.length, 120);
 });
 
 test("Unicode names use the installed Zod character rules", async () => {
-  const result = await createClient({ name: "😀".repeat(120) }, createClientStore());
+  const result = await ownedClient({ name: "😀".repeat(120) });
   assert.equal(Array.from(result.name).length, 120);
   await assert.rejects(
-    createClient({ name: "😀".repeat(121) }, createClientStore()),
+    ownedClient({ name: "😀".repeat(121) }),
     ZodError,
   );
 });
@@ -91,7 +96,7 @@ const invalidInputs: [string, unknown][] = [
 for (const [label, input] of invalidInputs) {
   test(`invalid ${label} never changes storage`, async () => {
     const store = createClientStore();
-    await assert.rejects(createClient(input, store), ZodError);
+    await assert.rejects(ownedClient(input, store), ZodError);
     assert.deepEqual(store.list(), []);
   });
 }
@@ -208,7 +213,7 @@ test("write failures return a safe 500 and sanitized logs", async (context) => {
 test("parallel creation produces distinct IDs without losing records", async () => {
   const store = createClientStore();
   const results = await Promise.all(Array.from({ length: 12 }, (_, index) =>
-    createClient({ name: `Fake Client ${index}` }, store),
+    ownedClient({ name: `Fake Client ${index}` }, store),
   ));
   assert.equal(new Set(results.map((client) => client.id)).size, 12);
   assert.equal(store.list().length, 12);

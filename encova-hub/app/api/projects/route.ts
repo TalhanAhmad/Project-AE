@@ -4,6 +4,7 @@ import { listProjects, createProject } from "../../../modules/projects/service.t
 import { projectValidationErrors } from "../../../modules/projects/schemas.ts";
 import { DomainError } from "../../../server/errors.ts";
 import { readJsonRequest, RequestError } from "../../../server/http.ts";
+import { currentUserResolver } from "../../../server/current-user.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,13 +23,13 @@ function failed(error: unknown, action: "list" | "create"): Response {
 }
 
 export async function GET(): Promise<Response> {
-  try { return Response.json({ data: await listProjects() }, { headers }); }
+  try { return Response.json({ data: await listProjects(await currentUserResolver.get()) }, { headers }); }
   catch (error) { return failed(error, "list"); }
 }
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const data = await createProject(await readJsonRequest(request));
+    const data = await createProject(await currentUserResolver.get(), await readJsonRequest(request));
     return Response.json({ data }, { status: 201, headers });
   } catch (error) { return failed(error, "create"); }
 }

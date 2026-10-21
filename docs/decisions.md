@@ -1,5 +1,17 @@
 # Implementation decisions
 
+## 2026-10-21 - Week 3 authentication and authorization
+
+Use Auth.js `next-auth` 5.0.0-beta.32 with Credentials sign-in for this learning project. It provides session cookies, login/logout handling, CSRF support, and expiry while Encova keeps application authorization in PostgreSQL. The credentials provider accepts only a manually seeded identity: there is no public registration or first-login owner path.
+
+Store an application user with a unique auth subject, normalized email, role, and active flag. Store the password hash in a separate credential-identity table. Resolve the active user from the database for every sensitive page, route, and service call. Session contents therefore do not preserve a revoked role or access after the database changes.
+
+Use scrypt with a random salt for the learning-project credential hashes. Passwords are accepted only by controlled owner/member scripts that read environment variables and refuse to replace existing roles or identities. Script database access uses the migration/admin connection when available because the runtime account deliberately cannot write users.
+
+Owners alone can access client details, create clients/projects, and add project members. Members list only projects with their own membership and receive no client-contact response. Membership addition is idempotent. Task-dependent membership removal is deferred because the Week 3 schema has no tasks to check yet.
+
+Use a bounded process-local login failure limiter (five failures per normalized email within 15 minutes). It reduces basic repeated attempts during local learning, but it does not coordinate Vercel instances; replace it with a shared limiter before relying on it at larger scale.
+
 ## 2026-10-18 - Scope and records
 
 Use the seven-day milestone for daily scope and the architecture for future direction. The user's explicit docs/progress.md requirement supersedes the document's WEEK_1_PROGRESS.md instruction. No old record exists to migrate.
