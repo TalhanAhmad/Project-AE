@@ -3,12 +3,14 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
 import pg from "pg";
+import { requireVerifiedRemoteTls } from "../modules/shared/database-url.ts";
 
 const migrationUrl = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL_UNPOOLED;
 const applicationUrl = process.env.DATABASE_URL;
 if (!migrationUrl || !applicationUrl) throw new Error("Configure migration and application database URLs.");
-const migration = new URL(migrationUrl);
-const application = new URL(applicationUrl);
+const verifiedMigrationUrl = requireVerifiedRemoteTls(migrationUrl);
+const migration = new URL(verifiedMigrationUrl);
+const application = new URL(requireVerifiedRemoteTls(applicationUrl));
 // Neon uses a direct hostname for migrations and a -pooler hostname at runtime.
 // They are the same database endpoint after the pooler marker is removed.
 const databaseHost = (url: URL) => url.hostname.replace("-pooler.", ".");
@@ -16,12 +18,12 @@ if (databaseHost(migration) !== databaseHost(application) || migration.pathname 
   throw new Error("Migration and application URLs must address the same database.");
 }
 const usesManagedSingleAccount = migration.username === application.username;
-if (!process.env.MIGRATION_DATABASE_URL) process.env.MIGRATION_DATABASE_URL = migrationUrl;
+if (!process.env.MIGRATION_DATABASE_URL) process.env.MIGRATION_DATABASE_URL = verifiedMigrationUrl;
 
 const require = createRequire(import.meta.url);
 const cli = path.join(path.dirname(require.resolve("prisma/package.json")), "build/index.js");
 execFileSync(process.execPath, [cli, "migrate", "deploy"], { stdio: "inherit" });
-const connection = new pg.Client({ connectionString: migrationUrl, connectionTimeoutMillis: 5000 });
+const connection = new pg.Client({ connectionString: verifiedMigrationUrl, connectionTimeoutMillis: 5000 });
 try {
   await connection.connect();
   if (usesManagedSingleAccount) {

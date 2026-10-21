@@ -9,7 +9,7 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --conditions=react-server --test learning/day-02.test.mts tests/clients.test.mts tests/create-clients.test.mts tests/projects.test.mts",
+    "test": "node --conditions=react-server --test learning/day-02.test.mts tests/clients.test.mts tests/create-clients.test.mts tests/projects.test.mts tests/database-url.test.mts",
     "test:http": "node --test --test-concurrency=1 tests/clients.http.test.mts tests/projects.http.test.mts",
     "test:browser": "playwright test",
     "test:integration": "node --conditions=react-server --test tests/database.integration.test.mts",
