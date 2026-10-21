@@ -1,0 +1,16 @@
+# Local tooling, database data, and generated output are not deployment source.
+.local/
+.tools/
+.vercel/
+
+# The Vercel build installs dependencies and creates its own Next.js output.
+encova-hub/node_modules/
+encova-hub/.next/
+encova-hub/.vercel/
+encova-hub/test-results/
+encova-hub/coverage/
+encova-hub/playwright-report/
+encova-hub/generated/
+encova-hub/.env
+encova-hub/.env.local
+encova-hub/*.tsbuildinfo

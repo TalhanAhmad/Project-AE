@@ -133,3 +133,11 @@ The first Git deployment failed before compilation because Vercel treated the re
 Vercel's initial SSO protection returned a login page to public API requests. The user requested a live public app, so disable SSO protection for this project while leaving Git-fork protection enabled. Set the production-only non-secret `APP_ORIGIN` to `https://encova-hub.vercel.app`; it is the exact production alias enforced by the API's mutation-origin check. Environment changes require a new deployment and do not add the missing database connection.
 
 Neon provides pooled `DATABASE_URL` for the Vercel app and direct `DATABASE_URL_UNPOOLED` for schema work. Preserve the local environment's separate migration/runtime roles. The migration wrapper now chooses `MIGRATION_DATABASE_URL` when present, otherwise Neon's direct URL, and recognizes that Neon uses a managed single account for both. It retains the existing least-privilege grants only when distinct local accounts are configured; do not copy database values into source or a Vercel variable merely to satisfy the local role split.
+
+## 2026-10-21 - Production database, TLS, and release verification
+
+The linked Neon database is now provisioned for the Vercel production environment. Apply the committed clients/projects migration once using the production direct connection; keep credentials in Vercel/Neon only. The live API now reads and creates persistent records. Production verification created two clearly labelled fake client records because this milestone has no delete endpoint.
+
+Require `sslmode=verify-full` for remote PostgreSQL URLs before Prisma or the migration client connects. Preserve local loopback URLs and already-strict remote URLs. This replaces `sslmode=require` so the deployed connection verifies the database server identity as well as encrypting traffic.
+
+Deploy from the repository root because the Vercel project root is `encova-hub`. Add a root `.vercelignore` so local PostgreSQL data, tooling, dependency folders, environment files, and generated Next.js output are never uploaded. The resulting production release uploaded 111 source files, built successfully on Vercel, and is aliased to `https://encova-hub.vercel.app`.

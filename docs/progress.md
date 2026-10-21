@@ -6,14 +6,14 @@
 - Status: Completed (technical scope; independent learning not verified).
 - Completed sessions: 5.
 - Remaining sessions: 0 technical sessions.
-- Last session date (Asia/Karachi): 2026-10-19.
-- Current work: Prepare production deployment for the client/project APIs by provisioning Neon PostgreSQL, applying migrations, redeploying, and verifying the live endpoints; currently blocked on accepting Neon Marketplace terms.
-- Blockers: Neon Marketplace terms must be accepted before the linked Vercel project can create its managed production PostgreSQL database. Without `DATABASE_URL`, the deployed API cannot read or create clients/projects.
-- Known issue: one high unpatched development-only braces advisory; production audit has no known advisories. Independent learning is unverified.
-- Exact next task: Accept the Neon Marketplace terms, provision the production database, run the saved migration with Vercel production credentials, redeploy, and test the live API.
-- Advancement approval: User explicitly authorized completing Week 2 now, with repeated testing and report, after publishing Week 1. Same-date session advancement is authorized. Learning questions remain skipped; independent understanding is not verified.
+- Last session date (Asia/Karachi): 2026-10-21.
+- Current work: Week 2 is deployed and verified in production.
+- Blockers: None for the completed Week 2 scope.
+- Known issue: Independent learning is unverified because learning checks were waived. Production dependency audit reports no known vulnerabilities.
+- Exact next task: Wait for explicit approval before planning or starting Week 3.
+- Advancement approval: User explicitly authorized completing Week 2 with repeated testing and report. Learning questions remain skipped; independent understanding is not verified.
 - Week 3 advancement: Not approved.
-- Deployment: In progress. The first Git deployment failed because Vercel used the repository root and could not find Next.js; the project root is now corrected. The production alias is public and `APP_ORIGIN` is configured as `https://encova-hub.vercel.app`, but no database is provisioned yet, so API reads/writes fail.
+- Deployment: Completed. The public Vercel alias `https://encova-hub.vercel.app` uses the connected Neon PostgreSQL database. The saved migration was applied once to production, and live client/project reads plus accepted and rejected client writes were checked on 2026-10-21.
 
 ## Verified publication
 
