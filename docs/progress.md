@@ -7,13 +7,13 @@
 - Completed sessions: 5.
 - Remaining sessions: 0 technical sessions.
 - Last session date (Asia/Karachi): 2026-10-22.
-- Current work: Task/comment schema, protected APIs, task screen, edit/delete rules, regression checks, and documentation are complete.
-- Blockers: Production account activation still needs a production `AUTH_SECRET` and controlled owner credentials. Vercel "clear" needs clarification because deleting deployments or the project/database is irreversible.
+- Current work: Week 4 implementation, checks, GitHub publication, and Vercel production activation are complete.
+- Blockers: None for the completed Week 4 work. Week 5 needs explicit approval before it can begin.
 - Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
-- Exact next task: Configure Vercel production sign-in before deploying a future change, then begin Week 5 only with explicit approval.
+- Exact next task: Wait for explicit approval before starting Week 5 — activity logs and concurrency tests.
 - Advancement approval: The user explicitly authorized starting and completing Week 4 with testing, fixes, report, and GitHub push on 2026-10-22. Learning questions remain skipped; independent understanding is not verified.
 - Week 5 advancement: Not approved.
-- Deployment: The existing public Vercel alias `https://encova-hub.vercel.app` remains connected to Neon. Week 4 will not be deployed until production sign-in can be configured safely.
+- Deployment: Complete. GitHub `main` is current and the public URL is `https://encova-hub.vercel.app`. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
 
 ## Verified publication
 
