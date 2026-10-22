@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import {
   clientCreatedResponseSchema,
   clientErrorResponseSchema,
@@ -164,7 +165,7 @@ export default function ClientWorkspace({ user }: { user: AppUser }) {
     <div className="workspace">
       <header className="topbar">
         <a className="brand" href="/clients"><span className="brand-mark" aria-hidden="true">e</span> Encova Hub</a>
-        <nav aria-label="Workspace"><a className="nav-link" href="/projects">Projects</a><span className="local-badge">{user.name} · Owner</span><SignOutButton /></nav>
+        <nav aria-label="Workspace"><Link className="nav-link" href="/projects">Projects</Link><span className="local-badge">{user.name} · Owner</span><SignOutButton /></nav>
       </header>
       <main id="main-content">
         <div className="page-heading">

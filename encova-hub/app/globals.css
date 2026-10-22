@@ -62,6 +62,9 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
 details { margin-top: 8px; font-size: 12px; }
 summary { cursor: pointer; color: #466a5d; }
 .client-notes { margin-top: 8px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.task-detail { margin-top: 24px; }
+.task-select { background: none; border: 0; padding: 0; font-weight: 700; text-align: left; }
+.comment { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
 footer { padding: 30px 0; font-size: 12px; color: var(--muted); }
 footer span { margin: 0 6px; }
 @media (max-width: 760px) { .workspace { padding: 0 20px; } .topbar { min-height: 74px; } main { padding-top: 30px; } .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .panel { padding: 20px; } .brand { font-size: 18px; } .local-badge { font-size: 10px; padding: 4px 8px; } h1 { font-size: 32px; } .empty-state { padding: 45px 8px; } }

@@ -185,7 +185,7 @@ export default function ProjectWorkspace({ user }: { user: AppUser }) {
             {projects.length > 0 ? <ul className="client-list" aria-label="Projects">{projects.map((project) => (
               <li className="client-card" key={project.id}>
                 <div className="client-avatar" aria-hidden="true">{Array.from(project.name)[0]?.toUpperCase()}</div>
-                <div className="client-details"><h3>{project.name}</h3><p>Client: {project.client.name}</p><span className="project-status">{statusLabels[project.status]}</span>{project.dueDate ? <p>Due: <time dateTime={project.dueDate}>{project.dueDate}</time></p> : null}{project.description ? <details><summary>View description</summary><p className="client-notes">{project.description}</p></details> : null}</div>
+                <div className="client-details"><h3><a className="nav-link" href={`/projects/${project.id}`}>{project.name}</a></h3><p>Client: {project.client.name}</p><span className="project-status">{statusLabels[project.status]}</span>{project.dueDate ? <p>Due: <time dateTime={project.dueDate}>{project.dueDate}</time></p> : null}{project.description ? <details><summary>View description</summary><p className="client-notes">{project.description}</p></details> : null}</div>
               </li>
             ))}</ul> : null}
           </section>

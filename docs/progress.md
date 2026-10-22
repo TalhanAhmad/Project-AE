@@ -1,19 +1,19 @@
 # Current project progress
 
-- Current milestone: Week 3 - Authentication, roles, and project membership.
-- Total planned Week 3 sessions: 5 (derived from architecture section 12; no separate Week 3 milestone supplied).
-- Current session: 5 - Security review, verification, and report.
-- Status: Completed (technical scope; independent learning not verified).
-- Completed sessions: 5.
-- Remaining sessions: 0 technical sessions.
-- Last session date (Asia/Karachi): 2026-10-21.
-- Current work: Week 3 implementation, regression checks, documentation, and GitHub publication are complete.
-- Blockers: Production account activation needs a production `AUTH_SECRET` and controlled owner credentials. They are not created from source code or placed in Git.
-- Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment. Production dependency audit reports no known vulnerabilities.
-- Exact next task: Configure a production authentication secret and provision the first owner through the documented controlled script, then perform a live sign-in smoke check.
-- Advancement approval: The user explicitly authorized Week 3 completion, testing, fixes, report, and push on 2026-10-21. Learning questions remain skipped; independent understanding is not verified.
-- Week 4 advancement: Not approved.
-- Deployment: The existing public Vercel alias `https://encova-hub.vercel.app` remains connected to Neon. Week 3 needs the production identity configuration above before users can sign in safely.
+- Current milestone: Week 4 - Tasks, comments, and UI states.
+- Total planned Week 4 sessions: 5 (derived from architecture section 12; no separate Week 4 milestone supplied).
+- Current session: 4 - Regression checks and remaining workflow review.
+- Status: In progress.
+- Completed sessions: 0.
+- Remaining sessions: 5.
+- Last session date (Asia/Karachi): 2026-10-22.
+- Current work: Task/comment schema, protected APIs, task screen, and regression checks are implemented locally; remaining edit/delete workflow review is in progress.
+- Blockers: Production account activation still needs a production `AUTH_SECRET` and controlled owner credentials. Vercel "clear" needs clarification because deleting deployments or the project/database is irreversible.
+- Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
+- Exact next task: Complete the remaining owner task-edit/soft-delete and author comment-edit/soft-delete workflow before marking Week 4 complete.
+- Advancement approval: The user explicitly authorized starting and completing Week 4 with testing, fixes, report, and GitHub push on 2026-10-22. Learning questions remain skipped; independent understanding is not verified.
+- Week 5 advancement: Not approved.
+- Deployment: The existing public Vercel alias `https://encova-hub.vercel.app` remains connected to Neon. Week 4 will not be deployed until production sign-in can be configured safely.
 
 ## Verified publication
 
