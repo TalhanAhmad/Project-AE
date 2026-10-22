@@ -8,6 +8,7 @@
 - [Week 2 report](week-2-report.md): completed persistence/project work, final repeated checks, fixes and remaining limitations.
 - [Week 3 plan](week-3-plan.md) and [session records](week-03/day-01.md): authentication, role, and project-membership work.
 - [Week 3 report](week-3-report.md): completed authorization work, actual checks, production activation steps, and limitations.
+- [Week 4 report](week-4-report.md): tasks, comments, permission checks, UI states, and final verification.
 - [Database setup](database-setup.md): PostgreSQL setup, accounts, migrations, synthetic seed, join and safe recreation exercises.
 - [Daily records](days/day-01.md): day-01 through day-07 record evidence and learning.
 - [Decisions](decisions.md): choices and their reasons.

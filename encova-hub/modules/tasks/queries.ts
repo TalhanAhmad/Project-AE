@@ -3,7 +3,7 @@ import { Prisma } from "../../generated/prisma/client.ts";
 import { getDatabase } from "../../server/database.ts";
 import { DomainError } from "../../server/errors.ts";
 import type { AppUser } from "../auth/types.ts";
-import type { CreateTaskInput, TaskStatusInput } from "./schemas.ts";
+import type { CreateTaskInput, DeleteTaskInput, TaskStatusInput, UpdateTaskInput } from "./schemas.ts";
 import type { Task } from "./types.ts";
 
 const select = {
@@ -53,5 +53,35 @@ export async function updateTaskStatus(actor: AppUser, taskId: string, input: Ta
     if (actor.role !== "OWNER" && task.assigneeId !== actor.id) throw new DomainError(403, "FORBIDDEN", "Only the assignee can change this task.");
     if (task.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
     return serialize(await transaction.task.update({ where: { id: task.id }, data: { status: input.status, version: { increment: 1 } }, select }));
+  }, { maxWait: 5000, timeout: 10000 });
+}
+
+export async function softDeleteTask(actor: AppUser, taskId: string, input: DeleteTaskInput): Promise<void> {
+  const db = getDatabase();
+  await db.$transaction(async (transaction) => {
+    const task = await transaction.task.findUnique({ where: { id: taskId }, select: { id: true, projectId: true, version: true, deletedAt: true } });
+    if (!task || task.deletedAt) throw new DomainError(404, "TASK_NOT_FOUND", "Task not found.");
+    const project = await visibleProject(transaction as ReturnType<typeof getDatabase>, actor, task.projectId);
+    if (project.archivedAt) throw new DomainError(409, "PROJECT_ARCHIVED", "Restore the project before changing tasks.");
+    if (actor.role !== "OWNER") throw new DomainError(403, "FORBIDDEN", "Only an owner can delete tasks.");
+    if (task.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
+    await transaction.task.update({ where: { id: task.id }, data: { deletedAt: new Date(), version: { increment: 1 } } });
+  }, { maxWait: 5000, timeout: 10000 });
+}
+
+export async function editTask(actor: AppUser, taskId: string, input: UpdateTaskInput): Promise<Task> {
+  const db = getDatabase();
+  return db.$transaction(async (transaction) => {
+    const task = await transaction.task.findUnique({ where: { id: taskId }, select: { id: true, projectId: true, version: true, deletedAt: true } });
+    if (!task || task.deletedAt) throw new DomainError(404, "TASK_NOT_FOUND", "Task not found.");
+    const project = await visibleProject(transaction as ReturnType<typeof getDatabase>, actor, task.projectId);
+    if (project.archivedAt) throw new DomainError(409, "PROJECT_ARCHIVED", "Restore the project before changing tasks.");
+    if (actor.role !== "OWNER") throw new DomainError(403, "FORBIDDEN", "Only an owner can edit tasks.");
+    if (task.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
+    if (input.assigneeId) {
+      const assignee = await transaction.user.findUnique({ where: { id: input.assigneeId }, select: { isActive: true, memberships: { where: { projectId: task.projectId }, select: { userId: true } } } });
+      if (!assignee || !assignee.isActive || !assignee.memberships.length) throw new DomainError(422, "INVALID_ASSIGNEE", "Choose an active member of this project.");
+    }
+    return serialize(await transaction.task.update({ where: { id: task.id }, data: { ...(input.title !== undefined ? { title: input.title } : {}), ...(input.description !== undefined ? { description: input.description } : {}), ...(input.priority !== undefined ? { priority: input.priority } : {}), ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId } : {}), ...(input.dueDate !== undefined ? { dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null } : {}), version: { increment: 1 } }, select }));
   }, { maxWait: 5000, timeout: 10000 });
 }

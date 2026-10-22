@@ -22,6 +22,14 @@ export const taskStatusSchema = z.strictObject({
   expectedVersion: z.number().int().positive(),
 });
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>;
+export const updateTaskSchema = z.strictObject({
+  title: z.string().trim().min(1, "Enter a task title.").max(200).refine(isDatabaseText, databaseTextMessage).optional(),
+  description: optionalText.nullable().optional(), priority: z.enum(taskPriorities).optional(), assigneeId: z.uuid("Choose a valid team member.").nullable().optional(),
+  dueDate: z.iso.date("Enter a valid calendar date.").refine((date) => !date.startsWith("0000"), "Year must be at least 0001.").nullable().optional(), expectedVersion: z.number().int().positive(),
+}).refine((value) => Object.keys(value).some((key) => key !== "expectedVersion"), "Provide a task field to update.");
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export const deleteTaskSchema = z.strictObject({ expectedVersion: z.number().int().positive() });
+export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
 
 export function taskValidationErrors(error: z.ZodError): TaskFieldErrors {
   const fields: TaskFieldErrors = {};

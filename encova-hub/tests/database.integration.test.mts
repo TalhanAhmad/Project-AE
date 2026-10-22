@@ -13,8 +13,8 @@ import { listClients } from "../modules/clients/service.ts";
 import { listProjects } from "../modules/projects/service.ts";
 import { addMember, listMembers } from "../modules/memberships/service.ts";
 import { resolveActiveUser } from "../modules/auth/service.ts";
-import { changeTaskStatus, createTask, listTasks } from "../modules/tasks/service.ts";
-import { createComment, listComments } from "../modules/comments/service.ts";
+import { changeTaskStatus, createTask, deleteTask, listTasks, updateTask } from "../modules/tasks/service.ts";
+import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
 import { DomainError } from "../server/errors.ts";
 import type { AppUser } from "../modules/auth/types.ts";
 
@@ -112,11 +112,19 @@ test("owners create project tasks while members can update assigned work and com
   await assert.rejects(createTask(taskOwner, project.id, { title: "Bad assignment", assigneeId: outsider.id }), (error) => error instanceof DomainError && error.status === 422);
   const updated = await changeTaskStatus(member, task.id, { status: "IN_PROGRESS", expectedVersion: task.version });
   assert.equal(updated.status, "IN_PROGRESS"); assert.equal(updated.version, 2);
+  const editedTask = await updateTask(taskOwner, task.id, { title: "Edited task", expectedVersion: updated.version });
+  assert.equal(editedTask.title, "Edited task"); assert.equal(editedTask.version, 3);
   await assert.rejects(changeTaskStatus(outsider, task.id, { status: "DONE", expectedVersion: updated.version }), (error) => error instanceof DomainError && error.status === 404);
   const comment = await createComment(member, task.id, { body: "I started this." });
   assert.equal(comment.author.id, member.id);
-  assert.deepEqual((await listComments(taskOwner, task.id)).map((entry) => entry.body), ["I started this."]);
+  const editedComment = await editComment(member, comment.id, { body: "Work is in progress.", expectedVersion: comment.version });
+  assert.equal(editedComment.body, "Work is in progress."); assert.equal(editedComment.version, 2);
+  await assert.rejects(editComment(taskOwner, comment.id, { body: "Owner cannot replace this.", expectedVersion: editedComment.version }), (error) => error instanceof DomainError && error.status === 403);
+  await deleteComment(member, comment.id, { expectedVersion: editedComment.version });
+  assert.deepEqual((await listComments(taskOwner, task.id)).map((entry) => entry.body), [null]);
   await assert.rejects(createComment(outsider, task.id, { body: "Hidden" }), (error) => error instanceof DomainError && error.status === 404);
+  await deleteTask(taskOwner, task.id, { expectedVersion: editedTask.version });
+  assert.deepEqual(await listTasks(member, project.id), []);
 });
 
 test("real client service persists a safe DTO with database version/timestamps", async () => {
