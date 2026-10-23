@@ -127,6 +127,11 @@ test("owners create project tasks while members can update assigned work and com
   await assert.rejects(createComment(outsider, task.id, { body: "Hidden" }), (error) => error instanceof DomainError && error.status === 404);
   await deleteTask(taskOwner, task.id, { expectedVersion: editedTask.version });
   assert.deepEqual(await listTasks(member, project.id), []);
+  const actions = await db.activityLog.findMany({ where: { taskId: task.id }, select: { action: true, details: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+  assert.deepEqual(actions.map((entry) => entry.action), ["TASK_CREATED", "TASK_STATUS_CHANGED", "TASK_UPDATED", "COMMENT_CREATED", "COMMENT_UPDATED", "COMMENT_DELETED", "TASK_DELETED"]);
+  assert.deepEqual(actions[1]?.details, { fromStatus: "TODO", toStatus: "IN_PROGRESS" });
+  assert.equal(JSON.stringify(actions).includes("I started this."), false);
+  assert.equal(JSON.stringify(actions).includes("Work is in progress."), false);
 });
 
 test("activity records keep a task paired with its own project", async () => {
@@ -137,13 +142,28 @@ test("activity records keep a task paired with its own project", async () => {
   const actor: AppUser = { id: actorRecord.id, authSubject: actorRecord.authSubject, email: actorRecord.email, name: actorRecord.name, role: "OWNER" };
   const task = await createTask(actor, project.id, { title: "Tracked task" });
 
-  const record = await db.activityLog.create({ data: { projectId: project.id, taskId: task.id, actorId: actor.id, action: "TASK_CREATED", details: { taskId: task.id } } });
+  const record = await db.activityLog.create({ data: { projectId: project.id, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: { changedFields: "priority" } } });
   assert.equal(record.projectId, project.id);
   await assert.rejects(
-    db.activityLog.create({ data: { projectId: otherProject.id, taskId: task.id, actorId: actor.id, action: "TASK_CREATED", details: {} } }),
+    db.activityLog.create({ data: { projectId: otherProject.id, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: {} } }),
     (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",
   );
-  assert.equal(await db.activityLog.count({ where: { actorId: actor.id } }), 1);
+  assert.equal(await db.activityLog.count({ where: { actorId: actor.id, action: "TASK_UPDATED" } }), 1);
+});
+
+test("an activity-insert failure rolls back the task mutation", async () => {
+  const client = await fixture();
+  const project = await createProject({ clientId: client.id, name: "Atomic activity project" });
+  const ownerRecord = await userFixture("OWNER");
+  const taskOwner: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const task = await createTask(taskOwner, project.id, { title: "Must not partially update" });
+  // This actor deliberately has no database row. The task update starts, but
+  // its required activity row violates the actor foreign key and must roll back.
+  const missingActor: AppUser = { id: randomUUID(), authSubject: "test:missing", email: "missing@example.test", name: "Missing actor", role: "OWNER" };
+
+  await assert.rejects(changeTaskStatus(missingActor, task.id, { status: "DONE", expectedVersion: task.version }), (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003");
+  const unchanged = await db.task.findUniqueOrThrow({ where: { id: task.id }, select: { status: true, version: true } });
+  assert.deepEqual(unchanged, { status: "TODO", version: 1 });
 });
 
 test("real client service persists a safe DTO with database version/timestamps", async () => {

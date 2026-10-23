@@ -1,6 +1,6 @@
 # Week 5 — Session 1: Activity data foundation
 
-**Status:** Awaiting learning check (technical work completed).
+**Status:** Completed (technical work; independent learning not verified).
 
 ## Goal
 
