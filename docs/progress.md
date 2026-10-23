@@ -13,7 +13,7 @@
 - Exact next task: Complete the Session 2 learning check: explain why an activity failure must roll back the related task change. Then request approval before Session 3 adds the visible activity API and screen.
 - Advancement approval: The user approved starting Week 5 and advancing to Session 2 on 2026-10-23. Learning questions remain skipped; independent understanding is not verified.
 - Week 5 advancement: Approved through Session 2. Session 3 needs explicit approval.
-- Deployment: The existing production deployment remains healthy at `https://encova-hub.vercel.app`. Week 5 Session 1 is committed locally and awaits a GitHub push; Session 2 changes are uncommitted. Neither session is on GitHub or Vercel. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
+- Deployment: Week 5 Sessions 1 and 2 were pushed to GitHub `main` as commit `c24bb42` on 2026-10-23. The existing production deployment remains healthy at `https://encova-hub.vercel.app`; the Vercel CLI is not installed locally, so the Git-triggered deployment status still needs a separate check. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
 
 ## Verified publication
 
