@@ -16,6 +16,7 @@ import { resolveActiveUser } from "../modules/auth/service.ts";
 import { changeTaskStatus, createTask, deleteTask, listTasks, updateTask } from "../modules/tasks/service.ts";
 import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
 import { DomainError } from "../server/errors.ts";
+import { Prisma } from "../generated/prisma/client.ts";
 import type { AppUser } from "../modules/auth/types.ts";
 
 const configuredTest = process.env.TEST_DATABASE_URL;
@@ -45,6 +46,7 @@ before(async () => {
 after(async () => {
   // Delete only fixture IDs created by this run; never truncate shared tables.
   try {
+    await db.activityLog.deleteMany({ where: { actorId: { in: userIds } } });
     await db.comment.deleteMany({ where: { authorId: { in: userIds } } });
     await db.task.deleteMany({ where: { OR: [{ assigneeId: { in: userIds } }, { createdById: { in: userIds } }] } });
     await db.projectMember.deleteMany({ where: { userId: { in: userIds } } });
@@ -125,6 +127,23 @@ test("owners create project tasks while members can update assigned work and com
   await assert.rejects(createComment(outsider, task.id, { body: "Hidden" }), (error) => error instanceof DomainError && error.status === 404);
   await deleteTask(taskOwner, task.id, { expectedVersion: editedTask.version });
   assert.deepEqual(await listTasks(member, project.id), []);
+});
+
+test("activity records keep a task paired with its own project", async () => {
+  const client = await fixture();
+  const project = await createProject({ clientId: client.id, name: "Activity project" });
+  const otherProject = await createProject({ clientId: client.id, name: "Other activity project" });
+  const actorRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: actorRecord.id, authSubject: actorRecord.authSubject, email: actorRecord.email, name: actorRecord.name, role: "OWNER" };
+  const task = await createTask(actor, project.id, { title: "Tracked task" });
+
+  const record = await db.activityLog.create({ data: { projectId: project.id, taskId: task.id, actorId: actor.id, action: "TASK_CREATED", details: { taskId: task.id } } });
+  assert.equal(record.projectId, project.id);
+  await assert.rejects(
+    db.activityLog.create({ data: { projectId: otherProject.id, taskId: task.id, actorId: actor.id, action: "TASK_CREATED", details: {} } }),
+    (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",
+  );
+  assert.equal(await db.activityLog.count({ where: { actorId: actor.id } }), 1);
 });
 
 test("real client service persists a safe DTO with database version/timestamps", async () => {

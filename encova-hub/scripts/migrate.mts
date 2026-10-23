@@ -40,6 +40,8 @@ try {
   await connection.query(`GRANT SELECT ON TABLE public.users, public.credential_identities, public.project_members TO ${role}`);
   await connection.query(`GRANT INSERT, UPDATE ON TABLE public.project_members TO ${role}`);
   await connection.query(`GRANT SELECT, INSERT, UPDATE ON TABLE public.tasks, public.comments TO ${role}`);
+  // Activity is append-only through application code: the runtime can read and insert it, never alter history.
+  await connection.query(`GRANT SELECT, INSERT ON TABLE public.activity_logs TO ${role}`);
   // PostgreSQL requires UPDATE privilege for SELECT ... FOR UPDATE client locks.
   await connection.query(`GRANT UPDATE ON TABLE public.clients TO ${role}`);
   console.log("Migrations applied; runtime has data access/client-lock privileges, no schema or migration-history access.");
