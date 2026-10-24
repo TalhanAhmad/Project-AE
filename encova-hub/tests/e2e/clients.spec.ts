@@ -12,13 +12,12 @@ async function emptyList(page: Page) {
   });
 }
 
-test("home opens the clients screen and shows an empty state", async ({ page }) => {
-  await emptyList(page);
+test("home opens the dashboard", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/clients$/);
-  await expect(page).toHaveTitle("Clients | Encova Hub");
-  await expect(page.getByRole("heading", { name: "No clients yet" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add client" })).toBeEnabled();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveTitle("Dashboard | Encova Hub");
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByText("Active projects", { exact: true })).toBeVisible();
 });
 
 test("loading is visible and prevents saving until the list is ready", async ({ page }) => {

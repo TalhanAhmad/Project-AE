@@ -1,18 +1,18 @@
 # Current project progress
 
-- Current milestone: Week 5 - Activity transactions and concurrency tests.
-- Total planned Week 5 sessions: 5 (derived from architecture section 12; no separate Week 5 milestone supplied).
+- Current milestone: Week 6 - Dashboard, search, pagination, and query analysis.
+- Total planned Week 6 sessions: 5 (derived from architecture section 12; no separate Week 6 milestone supplied).
 - Current session: 5 - Verification and report.
 - Status: Completed.
 - Completed sessions: 5 technical sessions.
 - Remaining sessions: 0.
 - Last session date (Asia/Karachi): 2026-10-24.
-- Current work: Week 5 activity history, atomic writes, concurrency protection, and final verification are complete.
+- Current work: Week 6 dashboard, task search, pagination, query analysis, and verification are complete.
 - Blockers: None.
 - Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
-- Exact next task: Wait for explicit approval before starting Week 6 — dashboard, search, pagination, and query analysis.
-- Advancement approval: The user approved completing all remaining Week 5 sessions with testing, fixes, and final confirmation on 2026-10-24. Session 3's learning check was demonstrated on 2026-10-24. Session 1 and 2 independent learning remain unverified.
-- Week 5 advancement: Completed. Week 6 needs explicit approval.
+- Exact next task: Wait for explicit approval before starting Week 7 — private deployment logs and restore practice.
+- Advancement approval: The user approved completing all remaining Week 6 sessions, testing, and a GitHub push on 2026-10-24. Week 7 needs explicit approval.
+- Week 5 advancement: Completed. Week 6 is complete.
 - Deployment: Week 5 was pushed to GitHub `main` as commit `c87b7e3` on 2026-10-24. Production migration `202610230004_activity_logs` was applied successfully to Neon before deployment. Vercel production deployment `encova-mfn53etz7-talha-ahmad.vercel.app` is Ready and serves the public alias `https://encova-hub.vercel.app`. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
 
 ## Verified publication

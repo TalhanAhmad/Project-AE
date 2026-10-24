@@ -31,6 +31,14 @@ export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export const deleteTaskSchema = z.strictObject({ expectedVersion: z.number().int().positive() });
 export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
 
+export const taskListQuerySchema = z.strictObject({
+  q: z.string().trim().max(120, "Search must be 120 characters or fewer.").optional().default(""),
+  status: z.enum(taskStatuses).optional(),
+  page: z.coerce.number().int().min(1).max(100000).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).optional().default(20),
+});
+export type TaskListQuery = z.infer<typeof taskListQuerySchema>;
+
 export function taskValidationErrors(error: z.ZodError): TaskFieldErrors {
   const fields: TaskFieldErrors = {};
   for (const issue of error.issues) {

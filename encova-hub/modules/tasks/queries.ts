@@ -4,8 +4,8 @@ import { getDatabase } from "../../server/database.ts";
 import { DomainError } from "../../server/errors.ts";
 import { appendActivity } from "../activity/queries.ts";
 import type { AppUser } from "../auth/types.ts";
-import type { CreateTaskInput, DeleteTaskInput, TaskStatusInput, UpdateTaskInput } from "./schemas.ts";
-import type { Task } from "./types.ts";
+import type { CreateTaskInput, DeleteTaskInput, TaskListQuery, TaskStatusInput, UpdateTaskInput } from "./schemas.ts";
+import type { Task, TaskPage, WorkspaceTask } from "./types.ts";
 
 const select = {
   id: true, projectId: true, title: true, description: true, status: true, priority: true, dueDate: true,
@@ -19,6 +19,10 @@ function serialize(row: TaskRow): Task {
   return { ...row, dueDate: row.dueDate?.toISOString().slice(0, 10) ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() };
 }
 
+const workspaceSelect = { ...select, project: { select: { id: true, name: true } } } as const;
+type WorkspaceTaskRow = Prisma.TaskGetPayload<{ select: typeof workspaceSelect }>;
+function serializeWorkspace(row: WorkspaceTaskRow): WorkspaceTask { return { ...serialize(row), project: row.project }; }
+
 async function visibleProject(transaction: ReturnType<typeof getDatabase>, actor: AppUser, projectId: string) {
   const project = await transaction.project.findUnique({ where: { id: projectId }, select: { id: true, archivedAt: true, members: { where: { userId: actor.id }, select: { userId: true } } } });
   if (!project || (actor.role !== "OWNER" && !project.members.length)) throw new DomainError(404, "PROJECT_NOT_FOUND", "Project not found.");
@@ -29,6 +33,22 @@ export async function listProjectTasks(actor: AppUser, projectId: string): Promi
   const db = getDatabase();
   await visibleProject(db, actor, projectId);
   return (await db.task.findMany({ where: { projectId, deletedAt: null }, select, orderBy: [{ createdAt: "desc" }, { id: "desc" }] })).map(serialize);
+}
+
+export async function listWorkspaceTasks(actor: AppUser, query: TaskListQuery): Promise<TaskPage> {
+  const projects: Prisma.ProjectWhereInput = actor.role === "OWNER" ? { archivedAt: null } : { archivedAt: null, members: { some: { userId: actor.id } } };
+  const where: Prisma.TaskWhereInput = {
+    deletedAt: null,
+    project: { is: projects },
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.q ? { title: { contains: query.q, mode: "insensitive" } } : {}),
+  };
+  const db = getDatabase();
+  const [total, rows] = await Promise.all([
+    db.task.count({ where }),
+    db.task.findMany({ where, select: workspaceSelect, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }, { id: "desc" }], skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
+  ]);
+  return { data: rows.map(serializeWorkspace), meta: { page: query.page, pageSize: query.pageSize, total, totalPages: Math.ceil(total / query.pageSize) } };
 }
 
 export async function createProjectTask(actor: AppUser, projectId: string, input: CreateTaskInput): Promise<Task> {

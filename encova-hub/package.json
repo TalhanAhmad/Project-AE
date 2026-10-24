@@ -26,6 +26,7 @@
     "auth:seed-member": "node --conditions=react-server scripts/seed-member.mts",
     "db:join": "node scripts/join.mts",
     "db:verify-recreation": "node scripts/verify-recreation.mts",
+    "db:analyze-task-workspace": "node scripts/analyze-task-workspace-query.mts",
     "persistence:create": "node scripts/verify-persistence.mts create",
     "persistence:check": "node scripts/verify-persistence.mts check",
     "postinstall": "prisma generate"

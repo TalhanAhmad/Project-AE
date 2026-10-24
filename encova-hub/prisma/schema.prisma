@@ -119,6 +119,7 @@ model Task {
   activityLogs ActivityLog[] @relation("TaskActivity")
 
   @@index([projectId, status, createdAt, id])
+  @@index([projectId, deletedAt, dueDate, createdAt(sort: Desc), id(sort: Desc)], map: "tasks_project_visible_due_created_id_idx")
   @@index([assigneeId, dueDate])
   @@unique([id, projectId])
   @@map("tasks")

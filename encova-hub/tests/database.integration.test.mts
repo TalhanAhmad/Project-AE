@@ -13,9 +13,10 @@ import { listClients } from "../modules/clients/service.ts";
 import { listProjects } from "../modules/projects/service.ts";
 import { addMember, listMembers } from "../modules/memberships/service.ts";
 import { resolveActiveUser } from "../modules/auth/service.ts";
-import { changeTaskStatus, createTask, deleteTask, listTasks, updateTask } from "../modules/tasks/service.ts";
+import { changeTaskStatus, createTask, deleteTask, listTasks, listWorkspace, updateTask } from "../modules/tasks/service.ts";
 import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
 import { listActivity } from "../modules/activity/service.ts";
+import { getDashboard } from "../modules/dashboard/service.ts";
 import { DomainError } from "../server/errors.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { AppUser } from "../modules/auth/types.ts";
@@ -95,6 +96,64 @@ test("membership scopes project reads and owners alone can access client contact
   await assert.rejects(listClients(member), (error) => error instanceof DomainError && error.status === 403);
   await assert.rejects(createProjectForUser(member, { clientId: client.id, name: "Member write" }), (error) => error instanceof DomainError && error.status === 403);
   await assert.rejects(addMember(member, visible.id, { userId: member.id }), (error) => error instanceof DomainError && error.status === 403);
+});
+
+test("dashboard metrics and assigned work are scoped to visible unarchived projects", async () => {
+  const client = await fixture();
+  const visible = await createProject({ clientId: client.id, name: "Dashboard visible", status: "ACTIVE" });
+  const hidden = await createProject({ clientId: client.id, name: "Dashboard hidden", status: "ACTIVE" });
+  const archived = await createProject({ clientId: client.id, name: "Dashboard archived", status: "ACTIVE" });
+  const ownerRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const date = new Date("2026-10-24T12:00:00.000Z");
+  const memberRecord = await userFixture("MEMBER");
+  const member: AppUser = { id: memberRecord.id, authSubject: memberRecord.authSubject, email: memberRecord.email, name: memberRecord.name, role: "MEMBER" };
+  await addMember(owner, visible.id, { userId: member.id });
+  await addMember(owner, hidden.id, { userId: actor.id });
+  await createTask(actor, visible.id, { title: "Visible overdue", dueDate: "2026-10-23" });
+  await createTask(actor, visible.id, { title: "Visible complete", dueDate: "2026-10-20" });
+  const visibleDone = await db.task.findFirstOrThrow({ where: { projectId: visible.id, title: "Visible complete" }, select: { id: true, version: true } });
+  await changeTaskStatus(actor, visibleDone.id, { status: "DONE", expectedVersion: visibleDone.version });
+  await createTask(actor, visible.id, { title: "Assigned visible work", dueDate: "2026-10-28", assigneeId: member.id });
+  const hiddenOwnerWork = await createTask(actor, hidden.id, { title: "Hidden overdue", dueDate: "2026-10-23", assigneeId: actor.id });
+  await createTask(actor, hidden.id, { title: "Hidden complete" });
+  const hiddenDone = await db.task.findFirstOrThrow({ where: { projectId: hidden.id, title: "Hidden complete" }, select: { id: true, version: true } });
+  await changeTaskStatus(actor, hiddenDone.id, { status: "DONE", expectedVersion: hiddenDone.version });
+  await createTask(actor, archived.id, { title: "Archived overdue", dueDate: "2026-10-23" });
+  await db.project.update({ where: { id: archived.id }, data: { archivedAt: new Date("2026-10-01T00:00:00.000Z") } });
+
+  assert.deepEqual(await getDashboard(member, date), {
+    activeProjects: 1,
+    overdueTasks: 1,
+    completedTasks: 1,
+    assignedWork: [{ id: (await db.task.findFirstOrThrow({ where: { projectId: visible.id, title: "Assigned visible work" } })).id, projectId: visible.id, projectName: "Dashboard visible", title: "Assigned visible work", status: "TODO", priority: "MEDIUM", dueDate: "2026-10-28" }],
+  });
+  const ownerDashboard = await getDashboard(actor, date);
+  assert.deepEqual(ownerDashboard.assignedWork, [{ id: hiddenOwnerWork.id, projectId: hidden.id, projectName: "Dashboard hidden", title: "Hidden overdue", status: "TODO", priority: "MEDIUM", dueDate: "2026-10-23" }]);
+});
+
+test("workspace task search and pagination are stable and membership-scoped", async () => {
+  const client = await fixture();
+  const visible = await createProject({ clientId: client.id, name: "Search visible", status: "ACTIVE" });
+  const hidden = await createProject({ clientId: client.id, name: "Search hidden", status: "ACTIVE" });
+  const ownerRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const memberRecord = await userFixture("MEMBER");
+  const member: AppUser = { id: memberRecord.id, authSubject: memberRecord.authSubject, email: memberRecord.email, name: memberRecord.name, role: "MEMBER" };
+  await addMember(owner, visible.id, { userId: member.id });
+  const first = await createTask(actor, visible.id, { title: "Alpha early", dueDate: "2026-10-25" });
+  const second = await createTask(actor, visible.id, { title: "Alpha later", dueDate: "2026-10-26" });
+  await createTask(actor, hidden.id, { title: "Alpha hidden", dueDate: "2026-10-24" });
+  await changeTaskStatus(actor, second.id, { status: "DONE", expectedVersion: second.version });
+
+  const firstPage = await listWorkspace(member, { q: "  ALPHA ", page: 1, pageSize: 1 });
+  const secondPage = await listWorkspace(member, { q: "alpha", page: 2, pageSize: 1 });
+  assert.deepEqual(firstPage.meta, { page: 1, pageSize: 1, total: 2, totalPages: 2 });
+  assert.deepEqual(firstPage.data.map((task) => task.id), [first.id]);
+  assert.deepEqual(secondPage.data.map((task) => task.id), [second.id]);
+  assert.equal(firstPage.data.some((task) => task.title.includes("hidden")), false);
+  const done = await listWorkspace(member, { status: "DONE", page: 1, pageSize: 10 });
+  assert.deepEqual(done.data.map((task) => task.id), [second.id]);
 });
 
 test("owners create project tasks while members can update assigned work and comment only on visible work", async () => {

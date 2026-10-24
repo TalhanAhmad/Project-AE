@@ -14,3 +14,6 @@ export type Task = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type WorkspaceTask = Task & { project: { id: string; name: string } };
+export type TaskPage = { data: WorkspaceTask[]; meta: { page: number; pageSize: number; total: number; totalPages: number } };

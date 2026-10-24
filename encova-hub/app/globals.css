@@ -64,6 +64,14 @@ summary { cursor: pointer; color: #466a5d; }
 .client-notes { margin-top: 8px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
 .task-detail { margin-top: 24px; }
 .activity-panel { margin-top: 24px; }
+.metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 28px 0 24px; }
+.metric-card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.metric-card span { color: var(--muted); display: block; font-size: 13px; }
+.metric-card strong { display: block; font-size: 34px; line-height: 1; margin-top: 12px; }
+.dashboard-work { margin-bottom: 28px; }
+.filter-row { align-items: end; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(160px, .4fr) auto; }
+.filter-row .form-field { margin: 0; }
+.pagination { align-items: center; display: flex; gap: 12px; justify-content: end; margin-top: 22px; }
 .activity-list { list-style: none; margin: 20px 0 0; padding: 0; }
 .activity-list li { border-top: 1px solid #e7ede9; padding: 14px 0; }
 .activity-list li > p { overflow-wrap: anywhere; }
@@ -72,6 +80,6 @@ summary { cursor: pointer; color: #466a5d; }
 .comment { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
 footer { padding: 30px 0; font-size: 12px; color: var(--muted); }
 footer span { margin: 0 6px; }
-@media (max-width: 760px) { .workspace { padding: 0 20px; } .topbar { min-height: 74px; } main { padding-top: 30px; } .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .panel { padding: 20px; } .brand { font-size: 18px; } .local-badge { font-size: 10px; padding: 4px 8px; } h1 { font-size: 32px; } .empty-state { padding: 45px 8px; } }
+@media (max-width: 760px) { .workspace { padding: 0 20px; } .topbar { min-height: 74px; } main { padding-top: 30px; } .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .metric-grid, .filter-row { grid-template-columns: 1fr; } .panel { padding: 20px; } .brand { font-size: 18px; } .local-badge { font-size: 10px; padding: 4px 8px; } h1 { font-size: 32px; } .empty-state { padding: 45px 8px; } }
 @media (max-width: 420px) { .topbar { gap: 8px; } .topbar nav { gap: 8px; } .topbar .local-badge { display: none; } .topbar .brand { font-size: 16px; } .topbar .brand-mark { height: 30px; width: 30px; font-size: 23px; } }
 @media (prefers-reduced-motion: no-preference) { button { transition: background-color .15s; } }
