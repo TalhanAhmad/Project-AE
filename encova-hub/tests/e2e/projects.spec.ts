@@ -43,6 +43,24 @@ test("real project flow links a client and persists through reload", async ({ pa
   expect(errors).toEqual([]);
 });
 
+test("project activity shows a safe task event", async ({ page }) => {
+  const errors: string[] = []; page.on("pageerror", (error) => errors.push(error.message));
+  const clientResponse = await page.request.post("/api/clients", { data: { name: `Activity client ${randomUUID()}` } });
+  expect(clientResponse.status()).toBe(201);
+  const projectResponse = await page.request.post("/api/projects", { data: { clientId: (await clientResponse.json()).data.id, name: `Activity project ${randomUUID()}` } });
+  expect(projectResponse.status()).toBe(201);
+  const { data: project } = await projectResponse.json();
+  await page.goto(`/projects/${project.id}`);
+  await expect(page.getByRole("heading", { name: project.name, exact: true })).toBeVisible();
+  await page.getByLabel("Task title *").fill("Visible activity task");
+  await page.getByRole("button", { name: "Add task" }).click();
+  const activity = page.locator(".activity-panel");
+  await activity.getByRole("button", { name: "Refresh" }).click();
+  await expect(activity.getByText("created a task.", { exact: false })).toBeVisible();
+  await expect(activity.getByText("Comment text is never shown here.", { exact: false })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("no clients shows a useful next step and disables project creation", async ({ page }) => {
   await clients(page, []);
   await page.route("**/api/projects", (route) => route.fulfill({ json: { data: [] } }));

@@ -55,5 +55,10 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "3.1.9"
+    }
+  },
   "packageManager": "pnpm@10.34.7"
 }

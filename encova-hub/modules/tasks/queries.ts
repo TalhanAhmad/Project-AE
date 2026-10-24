@@ -55,7 +55,9 @@ export async function updateTaskStatus(actor: AppUser, taskId: string, input: Ta
     if (project.archivedAt) throw new DomainError(409, "PROJECT_ARCHIVED", "Restore the project before changing tasks.");
     if (actor.role !== "OWNER" && task.assigneeId !== actor.id) throw new DomainError(403, "FORBIDDEN", "Only the assignee can change this task.");
     if (task.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
-    const updated = await transaction.task.update({ where: { id: task.id }, data: { status: input.status, version: { increment: 1 } }, select });
+    const result = await transaction.task.updateMany({ where: { id: task.id, version: input.expectedVersion, deletedAt: null }, data: { status: input.status, version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
+    const updated = await transaction.task.findUniqueOrThrow({ where: { id: task.id }, select });
     await appendActivity(transaction, { projectId: task.projectId, taskId: task.id, actorId: actor.id, action: "TASK_STATUS_CHANGED", details: { fromStatus: task.status, toStatus: updated.status } });
     return serialize(updated);
   }, { maxWait: 5000, timeout: 10000 });
@@ -70,7 +72,8 @@ export async function softDeleteTask(actor: AppUser, taskId: string, input: Dele
     if (project.archivedAt) throw new DomainError(409, "PROJECT_ARCHIVED", "Restore the project before changing tasks.");
     if (actor.role !== "OWNER") throw new DomainError(403, "FORBIDDEN", "Only an owner can delete tasks.");
     if (task.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
-    await transaction.task.update({ where: { id: task.id }, data: { deletedAt: new Date(), version: { increment: 1 } } });
+    const result = await transaction.task.updateMany({ where: { id: task.id, version: input.expectedVersion, deletedAt: null }, data: { deletedAt: new Date(), version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
     await appendActivity(transaction, { projectId: task.projectId, taskId: task.id, actorId: actor.id, action: "TASK_DELETED" });
   }, { maxWait: 5000, timeout: 10000 });
 }
@@ -88,7 +91,9 @@ export async function editTask(actor: AppUser, taskId: string, input: UpdateTask
       const assignee = await transaction.user.findUnique({ where: { id: input.assigneeId }, select: { isActive: true, memberships: { where: { projectId: task.projectId }, select: { userId: true } } } });
       if (!assignee || !assignee.isActive || !assignee.memberships.length) throw new DomainError(422, "INVALID_ASSIGNEE", "Choose an active member of this project.");
     }
-    const updated = await transaction.task.update({ where: { id: task.id }, data: { ...(input.title !== undefined ? { title: input.title } : {}), ...(input.description !== undefined ? { description: input.description } : {}), ...(input.priority !== undefined ? { priority: input.priority } : {}), ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId } : {}), ...(input.dueDate !== undefined ? { dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null } : {}), version: { increment: 1 } }, select });
+    const result = await transaction.task.updateMany({ where: { id: task.id, version: input.expectedVersion, deletedAt: null }, data: { ...(input.title !== undefined ? { title: input.title } : {}), ...(input.description !== undefined ? { description: input.description } : {}), ...(input.priority !== undefined ? { priority: input.priority } : {}), ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId } : {}), ...(input.dueDate !== undefined ? { dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null } : {}), version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(409, "STALE_VERSION", "This task changed. Refresh before trying again.");
+    const updated = await transaction.task.findUniqueOrThrow({ where: { id: task.id }, select });
     const changedFields = Object.keys(input).filter((field) => field !== "expectedVersion").sort().join(",");
     await appendActivity(transaction, { projectId: task.projectId, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: { changedFields } });
     return serialize(updated);

@@ -47,7 +47,9 @@ export async function updateComment(actor: AppUser, commentId: string, input: Up
   return db.$transaction(async (transaction) => {
     const comment = await editableComment(transaction, actor, commentId);
     if (comment.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This comment changed. Refresh before trying again.");
-    const updated = await transaction.comment.update({ where: { id: comment.id }, data: { body: input.body, version: { increment: 1 } }, select });
+    const result = await transaction.comment.updateMany({ where: { id: comment.id, version: input.expectedVersion, deletedAt: null }, data: { body: input.body, version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(409, "STALE_VERSION", "This comment changed. Refresh before trying again.");
+    const updated = await transaction.comment.findUniqueOrThrow({ where: { id: comment.id }, select });
     await appendActivity(transaction, { projectId: comment.task.projectId, taskId: comment.task.id, actorId: actor.id, action: "COMMENT_UPDATED" });
     return serialize(updated);
   }, { maxWait: 5000, timeout: 10000 });
@@ -58,7 +60,8 @@ export async function softDeleteComment(actor: AppUser, commentId: string, input
   await db.$transaction(async (transaction) => {
     const comment = await editableComment(transaction, actor, commentId);
     if (comment.version !== input.expectedVersion) throw new DomainError(409, "STALE_VERSION", "This comment changed. Refresh before trying again.");
-    await transaction.comment.update({ where: { id: comment.id }, data: { deletedAt: new Date(), version: { increment: 1 } } });
+    const result = await transaction.comment.updateMany({ where: { id: comment.id, version: input.expectedVersion, deletedAt: null }, data: { deletedAt: new Date(), version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(409, "STALE_VERSION", "This comment changed. Refresh before trying again.");
     await appendActivity(transaction, { projectId: comment.task.projectId, taskId: comment.task.id, actorId: actor.id, action: "COMMENT_DELETED" });
   }, { maxWait: 5000, timeout: 10000 });
 }

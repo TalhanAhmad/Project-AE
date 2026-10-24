@@ -170,6 +170,35 @@ test("an activity-insert failure rolls back the task mutation", async () => {
   assert.deepEqual(unchanged, { status: "TODO", version: 1 });
 });
 
+test("concurrent task and comment edits allow one version winner", async () => {
+  const client = await fixture();
+  const project = await createProject({ clientId: client.id, name: "Concurrent edit project" });
+  const ownerRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const task = await createTask(actor, project.id, { title: "Concurrent task" });
+
+  const taskResults = await Promise.allSettled([
+    changeTaskStatus(actor, task.id, { status: "IN_PROGRESS", expectedVersion: task.version }),
+    changeTaskStatus(actor, task.id, { status: "DONE", expectedVersion: task.version }),
+  ]);
+  assert.equal(taskResults.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(taskResults.filter((result) => result.status === "rejected" && result.reason instanceof DomainError && result.reason.status === 409 && result.reason.code === "STALE_VERSION").length, 1);
+  const savedTask = await db.task.findUniqueOrThrow({ where: { id: task.id }, select: { status: true, version: true } });
+  assert.equal(savedTask.version, 2);
+  assert.ok(["IN_PROGRESS", "DONE"].includes(savedTask.status));
+
+  const comment = await createComment(actor, task.id, { body: "Initial comment" });
+  const commentResults = await Promise.allSettled([
+    editComment(actor, comment.id, { body: "First edit", expectedVersion: comment.version }),
+    editComment(actor, comment.id, { body: "Second edit", expectedVersion: comment.version }),
+  ]);
+  assert.equal(commentResults.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(commentResults.filter((result) => result.status === "rejected" && result.reason instanceof DomainError && result.reason.status === 409 && result.reason.code === "STALE_VERSION").length, 1);
+  const savedComment = await db.comment.findUniqueOrThrow({ where: { id: comment.id }, select: { body: true, version: true } });
+  assert.equal(savedComment.version, 2);
+  assert.ok(["First edit", "Second edit"].includes(savedComment.body));
+});
+
 test("real client service persists a safe DTO with database version/timestamps", async () => {
   assert.equal((await db.$queryRaw<{ TimeZone: string }[]>`SHOW TIMEZONE`)[0].TimeZone, "UTC");
   const client = await fixture();
