@@ -1,6 +1,6 @@
 # Week 5 — Session 2: Atomic activity writes
 
-**Status:** Awaiting learning check (technical work completed).
+**Status:** Completed (technical work; independent learning not verified).
 
 ## Goal
 

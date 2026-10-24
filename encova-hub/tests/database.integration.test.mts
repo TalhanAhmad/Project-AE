@@ -15,6 +15,7 @@ import { addMember, listMembers } from "../modules/memberships/service.ts";
 import { resolveActiveUser } from "../modules/auth/service.ts";
 import { changeTaskStatus, createTask, deleteTask, listTasks, updateTask } from "../modules/tasks/service.ts";
 import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
+import { listActivity } from "../modules/activity/service.ts";
 import { DomainError } from "../server/errors.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { AppUser } from "../modules/auth/types.ts";
@@ -132,6 +133,8 @@ test("owners create project tasks while members can update assigned work and com
   assert.deepEqual(actions[1]?.details, { fromStatus: "TODO", toStatus: "IN_PROGRESS" });
   assert.equal(JSON.stringify(actions).includes("I started this."), false);
   assert.equal(JSON.stringify(actions).includes("Work is in progress."), false);
+  assert.deepEqual((await listActivity(member, project.id)).map((entry) => entry.action), actions.map((entry) => entry.action).reverse());
+  await assert.rejects(listActivity(outsider, project.id), (error) => error instanceof DomainError && error.status === 404);
 });
 
 test("activity records keep a task paired with its own project", async () => {
@@ -142,8 +145,9 @@ test("activity records keep a task paired with its own project", async () => {
   const actor: AppUser = { id: actorRecord.id, authSubject: actorRecord.authSubject, email: actorRecord.email, name: actorRecord.name, role: "OWNER" };
   const task = await createTask(actor, project.id, { title: "Tracked task" });
 
-  const record = await db.activityLog.create({ data: { projectId: project.id, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: { changedFields: "priority" } } });
+  const record = await db.activityLog.create({ data: { projectId: project.id, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: { changedFields: "priority", body: "must not leave the server" } } });
   assert.equal(record.projectId, project.id);
+  assert.deepEqual((await listActivity(actor, project.id)).find((entry) => entry.id === record.id)?.details, { changedFields: "priority" });
   await assert.rejects(
     db.activityLog.create({ data: { projectId: otherProject.id, taskId: task.id, actorId: actor.id, action: "TASK_UPDATED", details: {} } }),
     (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",

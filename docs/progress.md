@@ -2,18 +2,18 @@
 
 - Current milestone: Week 5 - Activity transactions and concurrency tests.
 - Total planned Week 5 sessions: 5 (derived from architecture section 12; no separate Week 5 milestone supplied).
-- Current session: 2 - Atomic activity writes.
-- Status: Awaiting learning check.
-- Completed sessions: 2 technical sessions.
-- Remaining sessions: 3 technical sessions; the Session 2 learning check is still pending.
-- Last session date (Asia/Karachi): 2026-10-23.
-- Current work: Task and comment mutations now write safe activity entries in the same database transaction. The new rollback path is tested.
+- Current session: 3 - Visible project history.
+- Status: Completed.
+- Completed sessions: 3 technical sessions.
+- Remaining sessions: 2 technical sessions.
+- Last session date (Asia/Karachi): 2026-10-24.
+- Current work: Permission-scoped activity API and project history panel are complete and tested against the database.
 - Blockers: None.
 - Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
-- Exact next task: Complete the Session 2 learning check: explain why an activity failure must roll back the related task change. Then request approval before Session 3 adds the visible activity API and screen.
-- Advancement approval: The user approved starting Week 5 and advancing to Session 2 on 2026-10-23. Learning questions remain skipped; independent understanding is not verified.
-- Week 5 advancement: Approved through Session 2. Session 3 needs explicit approval.
-- Deployment: Week 5 Sessions 1 and 2 were pushed to GitHub `main` as commit `c24bb42` on 2026-10-23. The existing production deployment remains healthy at `https://encova-hub.vercel.app`; the Vercel CLI is not installed locally, so the Git-triggered deployment status still needs a separate check. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
+- Exact next task: Wait for explicit approval before starting Session 4 — concurrent edits and stale-version rejection.
+- Advancement approval: The user approved starting Week 5, advancing to Session 2, and advancing to Session 3 on 2026-10-24. Session 3's learning check was demonstrated on 2026-10-24. Session 1 and 2 independent learning remain unverified.
+- Week 5 advancement: Approved through Session 3. Session 4 needs explicit approval.
+- Deployment: Week 5 Sessions 1 and 2 were pushed to GitHub `main` as commit `c24bb42` on 2026-10-23. Session 3 is complete locally but uncommitted, so its activity API and panel are not yet on GitHub or Vercel. The existing production deployment remains healthy at `https://encova-hub.vercel.app`; the Vercel CLI is not installed locally, so the Git-triggered deployment status still needs a separate check. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
 
 ## Verified publication
 

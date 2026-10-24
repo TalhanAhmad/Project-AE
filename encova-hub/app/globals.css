@@ -63,6 +63,11 @@ details { margin-top: 8px; font-size: 12px; }
 summary { cursor: pointer; color: #466a5d; }
 .client-notes { margin-top: 8px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
 .task-detail { margin-top: 24px; }
+.activity-panel { margin-top: 24px; }
+.activity-list { list-style: none; margin: 20px 0 0; padding: 0; }
+.activity-list li { border-top: 1px solid #e7ede9; padding: 14px 0; }
+.activity-list li > p { overflow-wrap: anywhere; }
+.activity-list time { color: var(--muted); display: block; font-size: 12px; margin-top: 4px; }
 .task-select { background: none; border: 0; padding: 0; font-weight: 700; text-align: left; }
 .comment { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
 footer { padding: 30px 0; font-size: 12px; color: var(--muted); }
