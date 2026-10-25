@@ -13,6 +13,11 @@ function describe(entry: ProjectActivity): string {
   if (entry.action === "COMMENT_CREATED") return "added a comment.";
   if (entry.action === "COMMENT_UPDATED") return "updated a comment.";
   if (entry.action === "COMMENT_DELETED") return "deleted a comment.";
+  if (entry.action === "MILESTONE_CREATED") return "created a milestone.";
+  if (entry.action === "MILESTONE_UPDATED") return "updated a milestone.";
+  if (entry.action === "MILESTONE_DELETED") return "deleted a milestone.";
+  if (entry.action === "TASK_MILESTONE_LINKED") return "linked a task to a milestone.";
+  if (entry.action === "TASK_MILESTONE_UNLINKED") return "unlinked a task from a milestone.";
   return "updated this project.";
 }
 

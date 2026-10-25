@@ -34,6 +34,12 @@ export type LinkTaskMilestoneInput = z.infer<typeof linkTaskMilestoneSchema>;
 export const unlinkTaskMilestoneSchema = z.strictObject({ expectedVersion });
 export type UnlinkTaskMilestoneInput = z.infer<typeof unlinkTaskMilestoneSchema>;
 
+export const setTaskMilestoneSchema = z.union([
+  linkTaskMilestoneSchema,
+  z.strictObject({ milestoneId: z.null(), expectedVersion }),
+]);
+export type SetTaskMilestoneInput = z.infer<typeof setTaskMilestoneSchema>;
+
 export function milestoneValidationErrors(error: z.ZodError): MilestoneFieldErrors {
   const fields: MilestoneFieldErrors = {};
   for (const issue of error.issues) {
