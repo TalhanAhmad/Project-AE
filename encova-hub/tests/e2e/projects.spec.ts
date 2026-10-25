@@ -61,6 +61,21 @@ test("project activity shows a safe task event", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("owner creates and sees a milestone on the project page", async ({ page }) => {
+  const clientResponse = await page.request.post("/api/clients", { data: { name: `Milestone browser client ${randomUUID()}` } });
+  expect(clientResponse.status()).toBe(201);
+  const projectResponse = await page.request.post("/api/projects", { data: { clientId: (await clientResponse.json()).data.id, name: `Milestone browser project ${randomUUID()}` } });
+  expect(projectResponse.status()).toBe(201);
+  const { data: project } = await projectResponse.json();
+  await page.goto(`/projects/${project.id}`);
+  await page.getByLabel("Milestone title *").fill("First release");
+  await page.getByLabel("Due date", { exact: false }).last().fill("2026-11-01");
+  await page.getByRole("button", { name: "Add milestone" }).click();
+  const milestone = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "First release", exact: true }) });
+  await expect(milestone.getByText("Planned · 0 linked tasks", { exact: true })).toBeVisible();
+  await expect(milestone.getByText("2026-11-01", { exact: true })).toBeVisible();
+});
+
 test("no clients shows a useful next step and disables project creation", async ({ page }) => {
   await clients(page, []);
   await page.route("**/api/projects", (route) => route.fulfill({ json: { data: [] } }));

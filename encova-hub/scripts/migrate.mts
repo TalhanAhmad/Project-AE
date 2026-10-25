@@ -40,6 +40,10 @@ try {
   await connection.query(`GRANT SELECT ON TABLE public.users, public.credential_identities, public.project_members TO ${role}`);
   await connection.query(`GRANT INSERT, UPDATE ON TABLE public.project_members TO ${role}`);
   await connection.query(`GRANT SELECT, INSERT, UPDATE ON TABLE public.tasks, public.comments TO ${role}`);
+  // Milestones are owner-managed project data. The database still enforces
+  // project pairing and restrictive deletes; this grant only enables the
+  // validated runtime service to perform its allowed operations.
+  await connection.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_milestones TO ${role}`);
   // Activity is append-only through application code: the runtime can read and insert it, never alter history.
   await connection.query(`GRANT SELECT, INSERT ON TABLE public.activity_logs TO ${role}`);
   // PostgreSQL requires UPDATE privilege for SELECT ... FOR UPDATE client locks.
