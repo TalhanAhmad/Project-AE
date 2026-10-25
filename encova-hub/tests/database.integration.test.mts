@@ -51,6 +51,7 @@ after(async () => {
     await db.activityLog.deleteMany({ where: { actorId: { in: userIds } } });
     await db.comment.deleteMany({ where: { authorId: { in: userIds } } });
     await db.task.deleteMany({ where: { OR: [{ assigneeId: { in: userIds } }, { createdById: { in: userIds } }] } });
+    await db.projectMilestone.deleteMany({ where: { project: { clientId: { in: ids } } } });
     await db.projectMember.deleteMany({ where: { userId: { in: userIds } } });
     await db.credentialIdentity.deleteMany({ where: { userId: { in: userIds } } });
     await db.user.deleteMany({ where: { id: { in: userIds } } });
@@ -212,6 +213,31 @@ test("activity records keep a task paired with its own project", async () => {
     (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",
   );
   assert.equal(await db.activityLog.count({ where: { actorId: actor.id, action: "TASK_UPDATED" } }), 1);
+});
+
+test("milestones can only link tasks from their own project", async () => {
+  const client = await fixture();
+  const project = await createProject({ clientId: client.id, name: "Milestone project" });
+  const otherProject = await createProject({ clientId: client.id, name: "Other milestone project" });
+  const ownerRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const linkedTask = await createTask(actor, project.id, { title: "Correctly linked task" });
+  const unrelatedTask = await createTask(actor, otherProject.id, { title: "Cross-project task" });
+  const milestone = await db.projectMilestone.create({ data: { projectId: project.id, title: "Release planning" } });
+
+  await db.task.update({ where: { id: linkedTask.id }, data: { milestoneId: milestone.id } });
+  await assert.rejects(
+    db.task.update({ where: { id: unrelatedTask.id }, data: { milestoneId: milestone.id } }),
+    (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",
+  );
+  assert.equal((await db.task.findUniqueOrThrow({ where: { id: linkedTask.id } })).milestoneId, milestone.id);
+  assert.equal((await db.task.findUniqueOrThrow({ where: { id: unrelatedTask.id } })).milestoneId, null);
+  await assert.rejects(
+    db.projectMilestone.delete({ where: { id: milestone.id } }),
+    (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003",
+  );
+  await db.task.update({ where: { id: linkedTask.id }, data: { milestoneId: null } });
+  await db.projectMilestone.delete({ where: { id: milestone.id } });
 });
 
 test("an activity-insert failure rolls back the task mutation", async () => {

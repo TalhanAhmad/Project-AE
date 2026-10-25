@@ -1,18 +1,18 @@
 # Current project progress
 
-- Current milestone: Week 7 - Private deployment logs and restore practice.
-- Total planned Week 7 sessions: 5 (derived from architecture section 12; no separate Week 7 milestone supplied).
-- Current session: 5 - Verification and report.
-- Status: Completed.
-- Completed sessions: 5 technical sessions.
-- Remaining sessions: 0.
+- Current milestone: Week 8 - Independent milestones feature and final fixes.
+- Total planned Week 8 sessions: 5 (derived from architecture section 12; no separate Week 8 milestone supplied).
+- Current session: 2 - Owner-only milestone services and task linking.
+- Status: In progress.
+- Completed sessions: 1.
+- Remaining sessions: 4.
 - Last session date (Asia/Karachi): 2026-10-25.
-- Current work: Week 7 structured logs, health check, recovery documentation, local restore drill, and final verification are complete.
+- Current work: Build validated, owner-only milestone services and explicit task link/unlink operations.
 - Blockers: None.
 - Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
-- Exact next task: Wait for explicit approval before starting Week 8 — independent milestones feature and final fixes.
-- Advancement approval: The user approved completing all Week 7 sessions, testing, and reconfirmation on 2026-10-25. Week 8 needs explicit approval.
-- Week 6 advancement: Completed. Week 7 is complete.
+- Exact next task: Add the milestone service input validation, owner authorization, and task link/unlink operations.
+- Advancement approval: The user approved continuous Week 8 work on 2026-10-25, including moving to the next tested session and pushing each session to GitHub. Session 1 is complete; Session 2 is in progress.
+- Week 7 advancement: Completed. Week 8 has started.
 - Deployment: Week 5 was pushed to GitHub `main` as commit `c87b7e3` on 2026-10-24. Production migration `202610230004_activity_logs` was applied successfully to Neon before deployment. Vercel production deployment `encova-mfn53etz7-talha-ahmad.vercel.app` is Ready and serves the public alias `https://encova-hub.vercel.app`. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
 
 ## Verified publication
