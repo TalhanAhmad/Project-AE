@@ -5,11 +5,13 @@ import { createClient, listClients } from "../../../modules/clients/service.ts";
 import { readJsonRequest, RequestError } from "../../../server/http.ts";
 import { currentUserResolver } from "../../../server/current-user.ts";
 import { DomainError } from "../../../server/errors.ts";
+import { logFailure } from "../../../server/logger.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
+  const startedAt = Date.now();
   try {
     const clients = await listClients(await currentUserResolver.get());
 
@@ -26,7 +28,7 @@ export async function GET(): Promise<Response> {
     }
     const requestId = randomUUID();
     // Correlate failures without recording input, storage details, or stacks.
-    console.error("clients.list.failed", { code: "INTERNAL_ERROR", requestId });
+    logFailure("clients.list.failed", requestId, "INTERNAL_ERROR", startedAt);
 
     return Response.json(
       {
@@ -45,6 +47,7 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const startedAt = Date.now();
   try {
     const input = await readJsonRequest(request);
     const client = await createClient(await currentUserResolver.get(), input);
@@ -69,7 +72,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const requestId = randomUUID();
-    console.error("clients.create.failed", { code: "INTERNAL_ERROR", requestId });
+    logFailure("clients.create.failed", requestId, "INTERNAL_ERROR", startedAt);
     return Response.json(
       {
         error: {
