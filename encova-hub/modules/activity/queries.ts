@@ -27,7 +27,7 @@ export async function appendActivity(transaction: Prisma.TransactionClient, inpu
   });
 }
 
-const safeDetailKeys = new Set(["status", "priority", "assigneeId", "fromStatus", "toStatus", "changedFields"]);
+const safeDetailKeys = new Set(["status", "priority", "assigneeId", "fromStatus", "toStatus", "changedFields", "milestoneId"]);
 
 function serializeDetails(value: Prisma.JsonValue): ActivityDetails {
   if (!value || Array.isArray(value) || typeof value !== "object") return {};

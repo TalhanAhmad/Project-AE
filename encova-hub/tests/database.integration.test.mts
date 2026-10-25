@@ -17,6 +17,7 @@ import { changeTaskStatus, createTask, deleteTask, listTasks, listWorkspace, upd
 import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
 import { listActivity } from "../modules/activity/service.ts";
 import { getDashboard } from "../modules/dashboard/service.ts";
+import { createMilestone, deleteMilestone, linkTaskMilestone, listMilestones, unlinkTaskMilestone, updateMilestone } from "../modules/milestones/service.ts";
 import { DomainError } from "../server/errors.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { AppUser } from "../modules/auth/types.ts";
@@ -238,6 +239,37 @@ test("milestones can only link tasks from their own project", async () => {
   );
   await db.task.update({ where: { id: linkedTask.id }, data: { milestoneId: null } });
   await db.projectMilestone.delete({ where: { id: milestone.id } });
+});
+
+test("owners manage milestones while joined members can only read them", async () => {
+  const client = await fixture();
+  const project = await createProject({ clientId: client.id, name: "Milestone service project" });
+  const otherProject = await createProject({ clientId: client.id, name: "Other milestone service project" });
+  const ownerRecord = await userFixture("OWNER");
+  const actor: AppUser = { id: ownerRecord.id, authSubject: ownerRecord.authSubject, email: ownerRecord.email, name: ownerRecord.name, role: "OWNER" };
+  const memberRecord = await userFixture("MEMBER");
+  const member: AppUser = { id: memberRecord.id, authSubject: memberRecord.authSubject, email: memberRecord.email, name: memberRecord.name, role: "MEMBER" };
+  await addMember(owner, project.id, { userId: member.id });
+  const milestone = await createMilestone(actor, project.id, { title: " Release one ", dueDate: "2026-11-01" });
+  assert.deepEqual(await listMilestones(member, project.id), [{ ...milestone, taskCount: 0 }]);
+  await assert.rejects(createMilestone(member, project.id, { title: "Not allowed" }), (error) => error instanceof DomainError && error.status === 403);
+
+  const task = await createTask(actor, project.id, { title: "Link through service" });
+  const otherTask = await createTask(actor, otherProject.id, { title: "Wrong project link" });
+  const linked = await linkTaskMilestone(actor, task.id, { milestoneId: milestone.id, expectedVersion: task.version });
+  assert.deepEqual(linked, { taskId: task.id, milestoneId: milestone.id, version: 2 });
+  await assert.rejects(linkTaskMilestone(actor, otherTask.id, { milestoneId: milestone.id, expectedVersion: otherTask.version }), (error) => error instanceof DomainError && error.code === "MILESTONE_PROJECT_MISMATCH");
+  await assert.rejects(deleteMilestone(actor, milestone.id, { expectedVersion: milestone.version }), (error) => error instanceof DomainError && error.code === "MILESTONE_HAS_TASKS");
+  const unlinked = await unlinkTaskMilestone(actor, task.id, { expectedVersion: linked.version });
+  assert.deepEqual(unlinked, { taskId: task.id, milestoneId: null, version: 3 });
+  const updated = await updateMilestone(actor, milestone.id, { status: "IN_PROGRESS", expectedVersion: milestone.version });
+  assert.equal(updated.version, 2);
+  assert.equal(updated.status, "IN_PROGRESS");
+  await deleteMilestone(actor, milestone.id, { expectedVersion: updated.version });
+
+  const actions = await db.activityLog.findMany({ where: { actorId: actor.id, projectId: project.id }, select: { action: true, details: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+  assert.deepEqual(actions.map((entry) => entry.action).filter((action) => action.startsWith("MILESTONE_") || action.startsWith("TASK_MILESTONE_")), ["MILESTONE_CREATED", "TASK_MILESTONE_LINKED", "TASK_MILESTONE_UNLINKED", "MILESTONE_UPDATED", "MILESTONE_DELETED"]);
+  assert.deepEqual(actions.find((entry) => entry.action === "TASK_MILESTONE_LINKED")?.details, { milestoneId: milestone.id });
 });
 
 test("an activity-insert failure rolls back the task mutation", async () => {

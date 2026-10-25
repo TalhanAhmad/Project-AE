@@ -6,6 +6,11 @@ export const activityActions = [
   "COMMENT_CREATED",
   "COMMENT_UPDATED",
   "COMMENT_DELETED",
+  "MILESTONE_CREATED",
+  "MILESTONE_UPDATED",
+  "MILESTONE_DELETED",
+  "TASK_MILESTONE_LINKED",
+  "TASK_MILESTONE_UNLINKED",
 ] as const;
 
 export type ActivityAction = (typeof activityActions)[number];

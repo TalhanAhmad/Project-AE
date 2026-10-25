@@ -7,3 +7,5 @@ export type ProjectStatus = "PLANNED" | "ACTIVE" | "ON_HOLD" | "COMPLETED";
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH";
+
+export type MilestoneStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED";
