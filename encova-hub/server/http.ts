@@ -8,6 +8,7 @@ export class RequestError extends Error {
 
   constructor(status: 400 | 403 | 413 | 415, code: string, message: string) {
     super(message);
+    this.name = "RequestError";
     this.status = status;
     this.code = code;
   }
