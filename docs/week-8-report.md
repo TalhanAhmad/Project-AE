@@ -31,7 +31,7 @@ The database rejects cross-project task links even if an application check is by
 
 ## Publication status
 
-Each Week 8 session was committed and pushed to GitHub `main`. This final report is published in the Week 8 completion commit. Production deployment and production migration were not performed in this session.
+Each Week 8 session was committed and pushed to GitHub `main`. This final report is published in the Week 8 completion commit. On 2026-10-27, the Week 8 production release was completed: Neon migrations `202610240005_task_workspace_index` and `202610250006_project_milestones` applied successfully, and the Vercel production alias is `https://encova-hub.vercel.app`. Live checks confirmed `/login` returns 200, `/api/health` returns 200 with `{"status":"ok"}`, and unauthenticated `/api/projects` correctly returns 401.
 
 ## Learning status
 

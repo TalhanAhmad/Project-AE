@@ -6,14 +6,14 @@
 - Status: Completed.
 - Completed sessions: 5.
 - Remaining sessions: 0.
-- Last session date (Asia/Karachi): 2026-10-25.
-- Current work: Week 8 is complete.
-- Blockers: None. Production release remains a separate operator action because the production database migration must be applied before milestone requests are served.
+- Last session date (Asia/Karachi): 2026-10-27.
+- Current work: Week 8 and its production release are complete.
+- Blockers: None.
 - Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
-- Exact next task: Wait for the next approved milestone or production-release request.
+- Exact next task: Wait for the next approved milestone or feature request.
 - Advancement approval: The user approved continuous Week 8 work on 2026-10-25. Week 8 sessions 1 through 5 are complete.
 - Week 7 advancement: Completed. Week 8 has started.
-- Deployment: Week 5 was pushed to GitHub `main` as commit `c87b7e3` on 2026-10-24. Production migration `202610230004_activity_logs` was applied successfully to Neon before deployment. Vercel production deployment `encova-mfn53etz7-talha-ahmad.vercel.app` is Ready and serves the public alias `https://encova-hub.vercel.app`. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning. On 2026-10-22, `/api/auth/providers` and `/login` returned 200, and unauthenticated `/clients` redirected to `/login` with 307 as expected.
+- Deployment: Week 8 source is deployed to the Vercel production alias `https://encova-hub.vercel.app`. On 2026-10-27, Neon migrations `202610240005_task_workspace_index` and `202610250006_project_milestones` were applied successfully. Public production checks then confirmed `/login` returns 200, `/api/health` returns 200 with `{"status":"ok"}`, and unauthenticated `/api/projects` correctly returns 401. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning.
 
 ## Verified publication
 
