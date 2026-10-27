@@ -19,7 +19,7 @@ export function getDatabase(): PrismaClient {
       statement_timeout: 10000,
       // The installed adapter formats timestamps as UTC without an offset.
       // Every pooled session must interpret those values in UTC too.
-      options: "-c timezone=UTC",
+      options: "-c timezone=UTC -c application_name=encova_hub",
     });
     databaseGlobal.encovaDatabase = new PrismaClient({
       adapter,
