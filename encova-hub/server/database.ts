@@ -9,7 +9,7 @@ const databaseGlobal = globalThis as typeof globalThis & { encovaDatabase?: Pris
 
 export function getDatabase(): PrismaClient {
   if (!databaseGlobal.encovaDatabase) {
-    const connectionString = process.env.DATABASE_URL;
+    const connectionString = process.env.DATABASE_URL?.trim();
     if (!connectionString) throw new Error("DATABASE_URL is required for database access.");
     const adapter = new PrismaPg({
       connectionString: requireVerifiedRemoteTls(connectionString),
