@@ -4,6 +4,7 @@ export class DomainError extends Error {
   constructor(status: 401 | 403 | 404 | 409 | 422, code: string, message: string) {
     super(message);
     this.name = "DomainError";
+    Object.setPrototypeOf(this, new.target.prototype);
     this.status = status;
     this.code = code;
   }
