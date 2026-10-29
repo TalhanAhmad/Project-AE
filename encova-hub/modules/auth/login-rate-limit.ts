@@ -12,6 +12,7 @@ function prune(now: number): void {
 }
 
 export function canAttemptLogin(identifier: string, now = Date.now()): boolean {
+  if (!identifier.trim()) return false;
   prune(now);
   const entry = attempts.get(identifier);
   return !entry || entry.failures < maximumFailures;
