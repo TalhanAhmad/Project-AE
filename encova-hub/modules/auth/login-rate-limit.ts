@@ -8,7 +8,7 @@ const attempts = new Map<string, Attempt>();
 
 function prune(now: number): void {
   for (const [key, entry] of attempts) if (entry.resetAt <= now) attempts.delete(key);
-  if (attempts.size > maximumEntries) attempts.clear();
+  if (attempts.size > maximumEntries) attempts.delete(attempts.keys().next().value as string);
 }
 
 export function canAttemptLogin(identifier: string, now = Date.now()): boolean {
