@@ -5,7 +5,7 @@ type SafeLogFields = { action: string; requestId?: string; actorId?: string; dur
 const priority: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
 function configuredLevel(): LogLevel {
-  const value = process.env.LOG_LEVEL?.toLowerCase();
+  const value = process.env.LOG_LEVEL?.trim().toLowerCase();
   return value === "debug" || value === "info" || value === "warn" || value === "error" ? value : "info";
 }
 
