@@ -19,6 +19,7 @@ export function canAttemptLogin(identifier: string, now = Date.now()): boolean {
 }
 
 export function recordLoginFailure(identifier: string, now = Date.now()): void {
+  if (!identifier.trim()) return;
   prune(now);
   const entry = attempts.get(identifier);
   if (!entry) attempts.set(identifier, { failures: 1, resetAt: now + windowMs });
