@@ -29,7 +29,7 @@ export async function verifyPassword(password: string, encoded: string): Promise
   try {
     const salt = Buffer.from(parts[4], "base64url");
     const expected = Buffer.from(parts[5], "base64url");
-    if (salt.length !== 16 || expected.length !== keyLength) return false;
+    if (salt.length < 16 || expected.length !== keyLength) return false;
     const actual = await derive(password, salt);
     return timingSafeEqual(actual, expected);
   } catch {
