@@ -6,7 +6,7 @@ const safeName = z.string().trim().min(1, "Enter a name.").max(120).refine(isDat
 
 export const credentialSchema = z.strictObject({
   email: normalizedEmail,
-  password: z.string().min(12, "Password must be at least 12 characters.").max(128),
+  password: z.string().min(12, "Password must be at least 12 characters.").max(128).refine(isDatabaseText, databaseTextMessage),
 });
 
 export const bootstrapOwnerSchema = credentialSchema.extend({ name: safeName });
