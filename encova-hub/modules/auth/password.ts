@@ -23,6 +23,7 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, encoded: string): Promise<boolean> {
+  if (!password.isWellFormed()) return false;
   const parts = encoded.split("$");
   if (parts.length !== 6 || parts[0] !== "scrypt" || parts[1] !== String(cost) || parts[2] !== String(blockSize) || parts[3] !== String(parallelization)) return false;
   try {
