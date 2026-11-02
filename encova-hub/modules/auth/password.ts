@@ -17,7 +17,7 @@ function derive(password: string, salt: Buffer): Promise<Buffer> {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
+  const salt = randomBytes(32);
   const hash = await derive(password, salt);
   return ["scrypt", cost, blockSize, parallelization, salt.toString("base64url"), hash.toString("base64url")].join("$");
 }
