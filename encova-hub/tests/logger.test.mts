@@ -15,7 +15,7 @@ test("structured logs contain only deliberate safe fields", () => {
 
 test("configured log level suppresses lower-priority entries", () => {
   const messages: string[] = []; const original = console.info; const previous = process.env.LOG_LEVEL;
-  console.info = (message: string) => { messages.push(message); }; process.env.LOG_LEVEL = "warn";
+  console.info = (message: string) => { messages.push(message); }; process.env.LOG_LEVEL = " warn ";
   try { writeLog("info", { action: "health.checked", code: "OK" }); }
   finally { console.info = original; if (previous === undefined) delete process.env.LOG_LEVEL; else process.env.LOG_LEVEL = previous; }
   assert.deepEqual(messages, []);
