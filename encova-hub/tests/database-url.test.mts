@@ -14,6 +14,7 @@ test("remote PostgreSQL URLs use explicit full TLS verification", () => {
 test("local PostgreSQL URLs remain unchanged", () => {
   const input = "postgresql://user:password@127.0.0.1:55432/encova_hub?sslmode=require";
   assert.equal(requireVerifiedRemoteTls(input), input);
+  assert.equal(requireVerifiedRemoteTls(` ${input} `), input);
 });
 
 test("already strict or unspecified remote TLS modes remain unchanged", () => {
