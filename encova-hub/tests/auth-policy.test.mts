@@ -22,6 +22,7 @@ test("password hashes verify only the original password", async () => {
 test("login attempts are limited per normalized identity and expire", () => {
   const email = "rate-limit@example.test";
   const start = 1_700_000_000_000;
+  assert.equal(canAttemptLogin("   ", start), false);
   clearLoginFailures(email);
   for (let index = 0; index < 5; index += 1) recordLoginFailure(email, start);
   assert.equal(canAttemptLogin(email, start + 1), false);
