@@ -12,6 +12,7 @@ const member: AppUser = { ...owner, id: "550e8400-e29b-41d4-a716-446655440002", 
 test("password hashes verify only the original password", async () => {
   const hash = await hashPassword("test-only-long-password");
   assert.match(hash, /^scrypt\$16384\$8\$1\$/);
+  assert.equal(Buffer.from(hash.split("$")[4] ?? "", "base64url").length, 32);
   assert.equal(await verifyPassword("test-only-long-password", hash), true);
   assert.equal(await verifyPassword("wrong-test-password", hash), false);
   assert.equal(await verifyPassword("test-only-long-password", "not-a-password-hash"), false);
