@@ -15,6 +15,7 @@ test("password hashes verify only the original password", async () => {
   assert.equal(Buffer.from(hash.split("$")[4] ?? "", "base64url").length, 32);
   assert.equal(await verifyPassword("test-only-long-password", hash), true);
   assert.equal(await verifyPassword("wrong-test-password", hash), false);
+  assert.equal(await verifyPassword("\uD800", hash), false);
   assert.equal(await verifyPassword("test-only-long-password", "not-a-password-hash"), false);
 });
 
