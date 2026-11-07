@@ -39,6 +39,7 @@ try {
   // add an idempotent project membership. It still receives no schema rights.
   await connection.query(`GRANT SELECT ON TABLE public.users, public.credential_identities, public.project_members TO ${role}`);
   await connection.query(`GRANT INSERT, UPDATE ON TABLE public.project_members TO ${role}`);
+  await connection.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.login_rate_limits TO ${role}`);
   await connection.query(`GRANT SELECT, INSERT, UPDATE ON TABLE public.tasks, public.comments TO ${role}`);
   // Milestones are owner-managed project data. The database still enforces
   // project pairing and restrictive deletes; this grant only enables the
