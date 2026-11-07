@@ -14,7 +14,11 @@ export async function canAttemptLogin(identifier: string, now = Date.now()): Pro
   if (!identifier.trim()) return false;
   const resetAt = new Date(now);
   const entry = await getDatabase().loginRateLimit.findUnique({ where: { key: loginLimitKey(identifier) } });
-  if (!entry || entry.resetAt <= resetAt) return true;
+  if (!entry) return true;
+  if (entry.resetAt <= resetAt) {
+    await getDatabase().loginRateLimit.deleteMany({ where: { key: entry.key, resetAt: { lte: resetAt } } });
+    return true;
+  }
   return entry.failures < maximumFailures;
 }
 

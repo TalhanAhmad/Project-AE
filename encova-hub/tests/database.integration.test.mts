@@ -13,6 +13,7 @@ import { listClients } from "../modules/clients/service.ts";
 import { listProjects } from "../modules/projects/service.ts";
 import { addMember, listMembers } from "../modules/memberships/service.ts";
 import { resolveActiveUser } from "../modules/auth/service.ts";
+import { canAttemptLogin, clearLoginFailures, loginLimitKey, recordLoginFailure } from "../modules/auth/login-rate-limit.ts";
 import { changeTaskStatus, createTask, deleteTask, listTasks, listWorkspace, updateTask } from "../modules/tasks/service.ts";
 import { createComment, deleteComment, editComment, listComments } from "../modules/comments/service.ts";
 import { listActivity } from "../modules/activity/service.ts";
@@ -80,6 +81,19 @@ test("active linked identities resolve while unlinked and inactive identities ar
   await assert.rejects(resolveActiveUser(`test:missing-${randomUUID()}`), (error) => error instanceof DomainError && error.status === 403);
   await db.user.update({ where: { id: user.id }, data: { isActive: false } });
   await assert.rejects(resolveActiveUser(user.authSubject), (error) => error instanceof DomainError && error.status === 403);
+});
+
+test("shared login limits block failed attempts and remove expired records", async () => {
+  const email = `limit-${randomUUID()}@example.test`;
+  const start = 1_700_000_000_000;
+  try {
+    assert.equal(await canAttemptLogin("   ", start), false);
+    assert.equal(await canAttemptLogin(email, start), true);
+    for (let attempt = 0; attempt < 5; attempt += 1) await recordLoginFailure(email, start);
+    assert.equal(await canAttemptLogin(email, start + 1), false);
+    assert.equal(await canAttemptLogin(email, start + 15 * 60 * 1000 + 1), true);
+    assert.equal(await db.loginRateLimit.count({ where: { key: loginLimitKey(email) } }), 0);
+  } finally { await clearLoginFailures(email); }
 });
 
 test("membership scopes project reads and owners alone can access client contacts or add members", async () => {
