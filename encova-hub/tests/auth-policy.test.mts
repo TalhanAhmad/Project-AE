@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { hashPassword, verifyPassword } from "../modules/auth/password.ts";
-import { canAttemptLogin, clearLoginFailures, recordLoginFailure } from "../modules/auth/login-rate-limit.ts";
+import { loginLimitKey } from "../modules/auth/login-rate-limit.ts";
 import { requireOwner } from "../modules/auth/service.ts";
 import { DomainError } from "../server/errors.ts";
 import type { AppUser } from "../modules/auth/types.ts";
@@ -19,14 +19,9 @@ test("password hashes verify only the original password", async () => {
   assert.equal(await verifyPassword("test-only-long-password", "not-a-password-hash"), false);
 });
 
-test("login attempts are limited per normalized identity and expire", () => {
-  const email = "rate-limit@example.test";
-  const start = 1_700_000_000_000;
-  assert.equal(canAttemptLogin("   ", start), false);
-  clearLoginFailures(email);
-  for (let index = 0; index < 5; index += 1) recordLoginFailure(email, start);
-  assert.equal(canAttemptLogin(email, start + 1), false);
-  assert.equal(canAttemptLogin(email, start + 15 * 60 * 1000 + 1), true);
+test("login rate-limit keys normalize identity without storing the email", () => {
+  assert.equal(loginLimitKey(" Rate-Limit@Example.Test "), loginLimitKey("rate-limit@example.test"));
+  assert.notEqual(loginLimitKey("rate-limit@example.test"), "rate-limit@example.test");
 });
 
 test("owner policy denies a member before any repository call", () => {

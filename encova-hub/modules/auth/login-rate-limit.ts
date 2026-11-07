@@ -1,31 +1,38 @@
 import "server-only";
+import { createHash } from "node:crypto";
+import { Prisma } from "../../generated/prisma/client.ts";
+import { getDatabase } from "../../server/database.ts";
 
-type Attempt = { failures: number; resetAt: number };
 const windowMs = 15 * 60 * 1000;
 const maximumFailures = 5;
-const maximumEntries = 10_000;
-const attempts = new Map<string, Attempt>();
 
-function prune(now: number): void {
-  for (const [key, entry] of attempts) if (entry.resetAt <= now) attempts.delete(key);
-  if (attempts.size > maximumEntries) attempts.delete(attempts.keys().next().value as string);
+export function loginLimitKey(identifier: string): string {
+  return createHash("sha256").update(identifier.trim().toLowerCase()).digest("hex");
 }
 
-export function canAttemptLogin(identifier: string, now = Date.now()): boolean {
+export async function canAttemptLogin(identifier: string, now = Date.now()): Promise<boolean> {
   if (!identifier.trim()) return false;
-  prune(now);
-  const entry = attempts.get(identifier);
-  return !entry || entry.failures < maximumFailures;
+  const resetAt = new Date(now);
+  const entry = await getDatabase().loginRateLimit.findUnique({ where: { key: loginLimitKey(identifier) } });
+  if (!entry || entry.resetAt <= resetAt) return true;
+  return entry.failures < maximumFailures;
 }
 
-export function recordLoginFailure(identifier: string, now = Date.now()): void {
+export async function recordLoginFailure(identifier: string, now = Date.now()): Promise<void> {
   if (!identifier.trim()) return;
-  prune(now);
-  const entry = attempts.get(identifier);
-  if (!entry) attempts.set(identifier, { failures: 1, resetAt: now + windowMs });
-  else entry.failures += 1;
+  const currentTime = new Date(now);
+  const nextReset = new Date(now + windowMs);
+  await getDatabase().$queryRaw(Prisma.sql`
+    INSERT INTO "login_rate_limits" ("key", "failures", "reset_at", "updated_at")
+    VALUES (${loginLimitKey(identifier)}, 1, ${nextReset}, ${currentTime})
+    ON CONFLICT ("key") DO UPDATE SET
+      "failures" = CASE WHEN "login_rate_limits"."reset_at" <= ${currentTime} THEN 1 ELSE "login_rate_limits"."failures" + 1 END,
+      "reset_at" = CASE WHEN "login_rate_limits"."reset_at" <= ${currentTime} THEN ${nextReset} ELSE "login_rate_limits"."reset_at" END,
+      "updated_at" = ${currentTime}
+  `);
 }
 
-export function clearLoginFailures(identifier: string): void {
-  attempts.delete(identifier);
+export async function clearLoginFailures(identifier: string): Promise<void> {
+  if (!identifier.trim()) return;
+  await getDatabase().loginRateLimit.deleteMany({ where: { key: loginLimitKey(identifier) } });
 }

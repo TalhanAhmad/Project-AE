@@ -10,13 +10,13 @@ import { canAttemptLogin, clearLoginFailures, recordLoginFailure } from "./login
 export async function authenticateCredentials(input: unknown): Promise<AppUser | null> {
   const parsed = credentialSchema.safeParse(input);
   if (!parsed.success) return null;
-  if (!canAttemptLogin(parsed.data.email)) return null;
+  if (!(await canAttemptLogin(parsed.data.email))) return null;
   const user = await findCredentialByEmail(parsed.data.email);
   if (!user || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
-    recordLoginFailure(parsed.data.email);
+    await recordLoginFailure(parsed.data.email);
     return null;
   }
-  clearLoginFailures(parsed.data.email);
+  await clearLoginFailures(parsed.data.email);
   return {
     id: user.id,
     authSubject: user.authSubject,
