@@ -6,14 +6,14 @@
 - Status: Completed.
 - Completed sessions: 5.
 - Remaining sessions: 0.
-- Last session date (Asia/Karachi): 2026-10-27.
-- Current work: Week 8 and its production release are complete.
+- Last session date (Asia/Karachi): 2026-11-07.
+- Current work: Week 8 remains complete; the post-milestone shared login-rate-limit improvement is complete.
 - Blockers: None.
-- Known issue: Independent learning is unverified because learning checks were waived. The login rate limit is process-local, so a shared store is needed if this grows beyond a learning deployment.
+- Known issue: Independent learning is unverified because learning checks were waived.
 - Exact next task: Wait for the next approved milestone or feature request.
 - Advancement approval: The user approved continuous Week 8 work on 2026-10-25. Week 8 sessions 1 through 5 are complete.
 - Week 7 advancement: Completed. Week 8 has started.
-- Deployment: Week 8 source is deployed to the Vercel production alias `https://encova-hub.vercel.app`. On 2026-10-27, Neon migrations `202610240005_task_workspace_index` and `202610250006_project_milestones` were applied successfully. Public production checks then confirmed `/login` returns 200, `/api/health` returns 200 with `{"status":"ok"}`, and unauthenticated `/api/projects` correctly returns 401. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning.
+- Deployment: Week 8 source is deployed to the Vercel production alias `https://encova-hub.vercel.app`. On 2026-10-27, Neon migrations `202610240005_task_workspace_index` and `202610250006_project_milestones` were applied successfully. On 2026-11-07, `202611070007_shared_login_rate_limits` was applied to Neon before shared-rate-limit code was pushed. Public production checks then confirmed `/login` returns 200, `/api/health` returns 200 with `{"status":"ok"}`, and unauthenticated `/api/projects` correctly returns 401. The Neon production database, `AUTH_SECRET`, and controlled owner account are configured. The one-time bootstrap environment variables were removed after provisioning.
 
 ## Verified publication
 
